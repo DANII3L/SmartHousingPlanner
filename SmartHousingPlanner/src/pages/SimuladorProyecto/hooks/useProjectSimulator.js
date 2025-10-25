@@ -176,7 +176,6 @@ export const useProjectSimulator = (project) => {
         const totalSum = newDownPayment + newSubsidyAmount;
         
         if (totalSum > formData.projectValue) {
-          console.log('Suma total:', totalSum, 'Valor proyecto:', formData.projectValue);
           showExcessAlert(totalSum, formData.projectValue);
           
           const revertedValue = formatNumber(formData[field].toString());

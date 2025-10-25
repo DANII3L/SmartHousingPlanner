@@ -1,7 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useFavorites } from '../hooks/useFavorites';
 
-const ProjectCard = ({ project, cardStyle = 'default', onDetailClick }) => {
+const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFavorite }) => {
+  const { toggleFavorite, isFavorite } = useFavorites();
+  
   const formatPrice = (price) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -24,10 +27,31 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick }) => {
     return (
       <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden border border-gray-100">
         <div className="flex">
-          <div className="w-32 h-24 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
+          <div className="w-32 h-24 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0 relative">
             <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onRemoveFavorite) {
+                  onRemoveFavorite();
+                } else {
+                  toggleFavorite(project);
+                }
+              }}
+              className="absolute top-2 right-2 p-1 rounded-full bg-white/80 hover:bg-white transition-colors shadow-sm"
+            >
+              <svg 
+                className={`w-4 h-4 ${isFavorite(project.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`} 
+                fill={isFavorite(project.id) ? 'currentColor' : 'none'} 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </button>
           </div>
           <div className="flex-1 p-4">
             <div className="flex justify-between items-start mb-2">
@@ -84,6 +108,30 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick }) => {
           <span className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg ${getStatusColor(project.status)}`}>
             {project.status}
           </span>
+        </div>
+        
+        <div className="absolute top-4 right-4">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onRemoveFavorite) {
+                onRemoveFavorite();
+              } else {
+                toggleFavorite(project);
+              }
+            }}
+            className="p-2 rounded-full bg-white/90 hover:bg-white transition-all duration-200 shadow-lg hover:shadow-xl"
+          >
+            <svg 
+              className={`w-5 h-5 transition-colors duration-200 ${isFavorite(project.id) ? 'text-red-500 fill-current' : 'text-gray-400 hover:text-red-400'}`} 
+              fill={isFavorite(project.id) ? 'currentColor' : 'none'} 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
         </div>
       </div>
       

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import PaymentCharts from '../Home/PaymentCharts';
+import PaymentCharts from '../../Home/PaymentCharts';
 
 const MisPagosPage = () => {
   const [activeProject, setActiveProject] = useState(null);

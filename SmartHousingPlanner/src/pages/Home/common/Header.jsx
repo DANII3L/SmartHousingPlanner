@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { HiHome, HiChevronDown, HiMenu, HiX } from 'react-icons/hi';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useAuthModalContext } from '../../Auth/context/AuthModalContext';
+import { useRedirectAfterLogin } from '../../../hooks/useRedirectAfterLogin';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { openLoginModal, openRegisterModal } = useAuthModalContext();
+  
+  // Manejar redirección después del login
+  useRedirectAfterLogin();
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
@@ -78,29 +86,40 @@ const Header = () => {
           </nav>
 
           <div className="hidden lg:flex items-center space-x-4">
-            <button className="px-6 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200">
-              Iniciar sesión
-            </button>
-            <button className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
-              Comenzar
-            </button>
-            
-            <div className="relative" ref={dropdownRef}>
-              <button 
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="flex items-center space-x-2 bg-gray-50/80 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200/50 hover:bg-gray-100/80 transition-colors duration-200"
-              >
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-sm">
-                  <span className="text-sm font-medium text-white">D</span>
-                </div>
-                <span className="text-sm font-medium text-gray-700">Daniel</span>
-                <HiChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
+            {!isAuthenticated ? (
+              <>
+                <button 
+                  onClick={openLoginModal}
+                  className="px-6 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200"
+                >
+                  Iniciar sesión
+                </button>
+                <button 
+                  onClick={openRegisterModal}
+                  className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  Comenzar
+                </button>
+              </>
+            ) : (
+              <div className="relative" ref={dropdownRef}>
+                <button 
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="flex items-center space-x-2 bg-gray-50/80 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200/50 hover:bg-gray-100/80 transition-colors duration-200"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-sm">
+                    <span className="text-sm font-medium text-white">
+                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">{user?.name}</span>
+                  <HiChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
 
               {isProfileDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
                   <Link 
-                    to="/perfil" 
+                    to="/user-info" 
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
@@ -114,22 +133,33 @@ const Header = () => {
                     Mis Pagos
                   </Link>
                   <Link 
-                    to="/proyectos-favoritos" 
+                    to="/favoritos" 
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
                     Proyectos Favoritos
                   </Link>
+                  <Link 
+                    to="/mis-simulaciones" 
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    Mis Simulaciones
+                  </Link>
                   <hr className="my-1 border-gray-200" />
                   <button 
                     className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors duration-200"
-                    onClick={() => setIsProfileDropdownOpen(false)}
+                    onClick={() => {
+                      logout();
+                      setIsProfileDropdownOpen(false);
+                    }}
                   >
                     Cerrar Sesión
                   </button>
                 </div>
               )}
-            </div>
+              </div>
+            )}
           </div>
 
           <button 
@@ -177,17 +207,49 @@ const Header = () => {
                 Simular
               </Link>
               <div className="pt-4 border-t border-gray-200/50">
-                <button className="w-full mb-3 px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200">
-                  Iniciar sesión
-                </button>
-                <button className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all duration-200">
-                  Comenzar
-                </button>
+                {!isAuthenticated ? (
+                  <>
+                    <button 
+                      onClick={() => {
+                        openLoginModal();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full mb-3 px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200"
+                    >
+                      Iniciar sesión
+                    </button>
+                    <button 
+                      onClick={() => {
+                        openRegisterModal();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all duration-200"
+                    >
+                      Comenzar
+                    </button>
+                  </>
+                ) : (
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 mb-3">
+                      ¡Hola, {user?.name}!
+                    </p>
+                    <button 
+                      onClick={() => {
+                        logout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 text-red-600 hover:text-red-800 font-medium transition-colors duration-200"
+                    >
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                )}
               </div>
             </nav>
           </div>
         )}
       </div>
+
     </header>
   );
 };

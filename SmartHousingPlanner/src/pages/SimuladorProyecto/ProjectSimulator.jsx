@@ -1,5 +1,6 @@
 import React from 'react';
 import { useProjectSimulator } from './hooks/useProjectSimulator';
+import { useSimulations } from '../../hooks/useSimulations';
 
 const ProjectSimulator = ({ project, onClose }) => {
   const {
@@ -13,6 +14,38 @@ const ProjectSimulator = ({ project, onClose }) => {
     handleInputChange,
     handleCheckboxChange
   } = useProjectSimulator(project);
+  
+  const { saveSimulation, hasSimulation } = useSimulations();
+
+  // Función para guardar la simulación
+  const handleSaveSimulation = () => {
+    if (!calculation) {
+      return;
+    }
+
+    const simulationData = {
+      projectId: project.id,
+      projectName: project.name,
+      projectLocation: project.location,
+      projectValue: formData.projectValue,
+      downPayment: formData.downPayment,
+      monthlyIncome: formData.monthlyIncome,
+      hasSubsidy: formData.hasSubsidy,
+      subsidyAmount: formData.subsidyAmount,
+      hasCesantias: formData.hasCesantias,
+      cesantiasAmount: formData.cesantiasAmount,
+      hasPrima: formData.hasPrima,
+      primaAmount: formData.primaAmount,
+      creditTerm: formData.creditTerm,
+      interestRate: formData.interestRate,
+      calculation: calculation
+    };
+
+    const result = saveSimulation(simulationData);
+    if (result.success) {
+      onClose();
+    }
+  };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(59, 130, 246, 0.60)' }}>
@@ -325,9 +358,11 @@ const ProjectSimulator = ({ project, onClose }) => {
               Cerrar
             </button>
             <button
-              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors duration-200"
+              onClick={handleSaveSimulation}
+              disabled={!calculation}
+              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl transition-colors duration-200"
             >
-              Guardar Simulación
+              {hasSimulation(project.id) ? 'Actualizar Simulación' : 'Guardar Simulación'}
             </button>
           </div>
         </div>
