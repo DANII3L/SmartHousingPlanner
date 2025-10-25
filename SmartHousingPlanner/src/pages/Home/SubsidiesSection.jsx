@@ -1,4 +1,5 @@
 import React from 'react';
+import ContactForm from './components/ContactForm';
 
 const SubsidiesSection = () => {
   return (
@@ -45,9 +46,14 @@ const SubsidiesSection = () => {
                 <span className="text-sm text-gray-700">Vivienda nueva y usada</span>
               </div>
             </div>
-            <button className="w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+            <a 
+              href="https://www.fna.gov.co/vivienda/Subsidios-y-coberturas" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 text-center"
+            >
               Más información
-            </button>
+            </a>
           </div>
 
           <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-100">
@@ -58,15 +64,15 @@ const SubsidiesSection = () => {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Vivienda de Interés Social (VIS)</h3>
             <p className="text-gray-600 mb-6 leading-relaxed">
-              Viviendas nuevas hasta $150.000.000 que pueden acceder a beneficios 
-              especiales y subsidios complementarios.
+            Es aquella que se desarrolla para garantizar el derecho a la vivienda de los hogares de menores ingresos, que cumple con los estándares de calidad en diseño urbanístico, arquitectónico y de construcción sostenible, 
+            y cuyo valor no exceda los 135 Salarios Mínimos Legales Mensuales Vigentes (SMLMV).
             </p>
             <div className="space-y-3">
               <div className="flex items-center">
                 <svg className="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
-                <span className="text-sm text-gray-700">Hasta $150.000.000 COP</span>
+                <span className="text-sm text-gray-700">Hasta 135 SMLMV</span>
               </div>
               <div className="flex items-center">
                 <svg className="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
@@ -75,9 +81,14 @@ const SubsidiesSection = () => {
                 <span className="text-sm text-gray-700">Vivienda nueva únicamente</span>
               </div>
             </div>
-            <button className="w-full mt-6 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+            <a 
+              href="https://www.minvivienda.gov.co/viceministerio-de-vivienda-vis-y-vip" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block w-full mt-6 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 text-center"
+            >
               Más información
-            </button>
+            </a>
           </div>
 
           <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-green-100">
@@ -105,25 +116,30 @@ const SubsidiesSection = () => {
                 <span className="text-sm text-gray-700">Para afiliados activos</span>
               </div>
             </div>
-            <button className="w-full mt-6 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
-              Más información
-            </button>
+            <div className="flex gap-3 mt-6">
+              <a 
+                href="https://www.fna.gov.co/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 text-center"
+              >
+                Fondo Nacional del Ahorro
+              </a>
+              <a 
+                href="https://www.funcionpublica.gov.co/programa-servimos/fondo-nacional-del-ahorro" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 text-center"
+              >
+                Más información (GOV)
+              </a>
+            </div>
           </div>
 
         </div>
 
-        <div className="text-center mt-16">
-          <div className="bg-gradient-to-r from-orange-100 to-blue-100 rounded-2xl p-8 max-w-4xl mx-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">¿No estás seguro de cuál subsidio te corresponde?</h3>
-            <p className="text-gray-600 mb-6">
-              Nuestro simulador te ayuda a identificar automáticamente todos los subsidios 
-              disponibles según tu perfil y situación financiera.
-            </p>
-            <button className="bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
-              Consultar elegibilidad
-            </button>
-          </div>
-        </div>
+        { /* Formulario de contacto */ }
+        <ContactForm />
       </div>
     </section>
   );
