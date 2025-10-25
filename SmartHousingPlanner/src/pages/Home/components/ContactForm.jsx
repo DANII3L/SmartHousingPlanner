@@ -55,7 +55,7 @@ const ContactForm = () => {
         {!showForm ? (
           <button 
             onClick={() => setShowForm(true)}
-            className="bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+            className="cursor-pointer bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
           >
             Solicitar información
           </button>
@@ -75,7 +75,7 @@ const ContactForm = () => {
                 <input
                   type="text"
                   id="nombre"
-                  name="nombre"
+                  name="nombre" 
                   required
                   value={formData.nombre}
                   onChange={handleChange}
@@ -135,14 +135,14 @@ const ContactForm = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer flex-1 bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? 'Enviando...' : 'Enviar solicitud'}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
+                  className="cursor-pointer px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200"
                 >
                   Cancelar
                 </button>
