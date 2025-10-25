@@ -38,6 +38,8 @@ const GenericList = ({
   const [internalError, setInternalError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState("Todos");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   useEffect(() => {
     setItems(data);
@@ -57,10 +59,16 @@ const GenericList = ({
     });
   }, [items, searchTerm, searchFields]);
 
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  // Filtro por categoría (status)
+  const filteredAndCategorizedItems = useMemo(() => {
+    if (selectedFilter === "Todos") return filteredItems;
+    return filteredItems.filter(item => item.status === selectedFilter);
+  }, [filteredItems, selectedFilter]);
+
+  const totalPages = Math.ceil(filteredAndCategorizedItems.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedItems = filteredItems.slice(startIndex, endIndex);
+  const paginatedItems = filteredAndCategorizedItems.slice(startIndex, endIndex);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -113,20 +121,59 @@ const GenericList = ({
       {/* Barra de búsqueda */}
       {showSearch && (
         <div className="mb-8">
-          <div className="relative max-w-md mx-auto">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-            />
-          </div>
+         <div className="flex items-center justify-center max-w-md mx-auto space-x-3">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder={searchPlaceholder}
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+              />
+             </div>
+              
+            {/* Dropdown de Filtro */}
+            <div className="relative">
+              <button
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className="px-5 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition duration-200 flex items-center gap-2"
+              >
+                <span>{selectedFilter}</span>
+                <svg
+                  className={`w-4 h-4 transform transition-transform duration-200 ${isFilterOpen ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isFilterOpen && (
+                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-10">
+                  {["Todos", "Preventa", "En construcción", "Entregado", "Menor a mayor", "Mayor a menor"].map((option) => (
+                    <button
+                          key={option}
+                          onClick={() => {
+                            setSelectedFilter(option);
+                            setIsFilterOpen(false);
+                          }}
+                          className={`block w-full text-left px-4 py-2 text-gray-700 hover:bg-blue-100 ${
+                            selectedFilter === option ? "font-semibold text-blue-600" : ""
+                          }`}
+                        >
+                        {option}
+                    </button>
+                   ))}
+               </div>
+             )}
+           </div>
+         </div>
         </div>
       )}
 
@@ -192,7 +239,7 @@ const GenericList = ({
       )}
 
       {/* No Results */}
-      {!isInternalLoading && !isInternalError && filteredItems.length === 0 && (
+      {!isInternalLoading && !isInternalError && filteredAndCategorizedItems.length === 0 && (
         <div className="text-center py-20">
           <div className="text-gray-500 text-lg font-medium">{emptyMessage}</div>
           {emptySubMessage && (
