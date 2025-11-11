@@ -2,13 +2,22 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFavorites } from '../../Proyectos/hooks/useFavorites';
 import ProjectCard from '../../Proyectos/components/ProjectCard';
+import { useSweetAlert } from '../../../hooks/useSweetAlert';
 
 const FavoritosPage = () => {
   const navigate = useNavigate();
   const { favorites, clearFavorites, removeFromFavorites } = useFavorites();
+  const { showConfirmation } = useSweetAlert();
 
-  const handleClearFavorites = () => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar todos tus favoritos?')) {
+  const handleClearFavorites = async () => {
+    const confirmed = await showConfirmation(
+      '¿Eliminar todos tus favoritos?',
+      `Se eliminarán ${favorites.length} ${favorites.length === 1 ? 'proyecto' : 'proyectos'} guardados.`,
+      'Sí, eliminar',
+      'Cancelar'
+    );
+
+    if (confirmed) {
       clearFavorites();
     }
   };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../hooks/useFavorites';
 
@@ -56,7 +56,7 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFa
           <div className="flex-1 p-4">
             <div className="flex justify-between items-start mb-2">
               <h3 className="text-lg font-bold text-gray-900">{project.name}</h3>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor}`}>
                 {project.status}
               </span>
             </div>
@@ -90,6 +90,8 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFa
     );
   }
   
+  const statusColor = useMemo(() => getStatusColor(project.status), [project.status]);
+
   return (
     <div className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100/50 hover:border-blue-200 hover:-translate-y-2">
       <div className="relative h-64 overflow-hidden">
@@ -105,7 +107,7 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFa
         </div>
         
         <div className="absolute top-4 left-4">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg ${getStatusColor(project.status)}`}>
+          <span className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg ${statusColor}`}>
             {project.status}
           </span>
         </div>
@@ -194,4 +196,4 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFa
   );
 };
 
-export default ProjectCard;
+export default memo(ProjectCard);

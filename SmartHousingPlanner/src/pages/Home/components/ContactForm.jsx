@@ -23,13 +23,11 @@ const ContactForm = () => {
     setIsSubmitting(true);
     setSubmitMessage('');
 
-    // Simulación de envío de formulario (aquí podrías conectar con tu backend)
     setTimeout(() => {
       setIsSubmitting(false);
       setSubmitMessage('Gracias por tu interés. Nos pondremos en contacto contigo pronto.');
       setFormData({ nombre: '', email: '', telefono: '', mensaje: '' });
       
-      // Opcional: ocultar el formulario después de 3 segundos
       setTimeout(() => {
         setShowForm(false);
         setSubmitMessage('');

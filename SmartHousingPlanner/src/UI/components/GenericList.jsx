@@ -16,9 +16,6 @@ const GenericList = ({
   searchFields = ['name', 'title'],
   searchPlaceholder = "Buscar...",
   
-  // Configuración de API
-  fetchData,
-  
   // Configuración de UI
   showSearch = true,
   showPagination = true,

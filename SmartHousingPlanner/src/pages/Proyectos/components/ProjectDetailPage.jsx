@@ -1,43 +1,46 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import PaymentCharts from '../../Home/PaymentCharts';
 import ProjectSimulator from '../../SimuladorProyecto/ProjectSimulator';
+import { ProjectsService } from '../../../service/projects.js';
 
 const ProjectDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [showSimulator, setShowSimulator] = useState(false);
+  const [project, setProject] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const projects = {
-    1: {
-      name: "Torres del Sol",
-      location: "Bogotá, Colombia",
-      apartments: 120,
-      priceFrom: 280000000,
-      description: "Moderno proyecto residencial en el corazón de Bogotá, con excelente conectividad y servicios.",
-      features: ["Zonas verdes", "Gimnasio", "Piscina", "Jardín infantil", "Seguridad 24/7"]
-    },
-    2: {
-      name: "Residencial Los Robles",
-      location: "Medellín, Colombia",
-      apartments: 85,
-      priceFrom: 320000000,
-      description: "Lujoso desarrollo en Medellín con vista panorámica y acabados de primera calidad.",
-      features: ["Terraza con vista", "Spa", "Cinema", "Club social", "Concierge"]
-    },
-    3: {
-      name: "Vista Hermosa",
-      location: "Cali, Colombia",
-      apartments: 200,
-      priceFrom: 250000000,
-      description: "Gran proyecto familiar en Cali con espacios amplios y áreas de recreación.",
-      features: ["Canchas deportivas", "Parque", "Salón comunal", "Estacionamiento", "Bodegas"]
-    }
-  };
+  useEffect(() => {
+    let isMounted = true;
 
-  const project = projects[id];
+    const fetchProject = async () => {
+      setIsLoading(true);
+      const projectData = await ProjectsService.detail(id);
+      if (isMounted) {
+        setProject(projectData);
+        setIsLoading(false);
+      }
+    };
+
+    void fetchProject();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
   if (!project) {
+    if (isLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+            <p className="text-gray-600">Cargando proyecto...</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

@@ -1,35 +1,11 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ProjectsService } from '../../service/projects.js';
 
 const ProjectsSection = () => {
   const navigate = useNavigate();
-  
-  const projects = [
-    {
-      id: 1,
-      name: "Torres del Sol",
-      location: "Bogotá, Colombia",
-      apartments: 120,
-      priceFrom: 280000000,
-      image: "/api/placeholder/300/200"
-    },
-    {
-      id: 2,
-      name: "Residencial Los Robles",
-      location: "Medellín, Colombia", 
-      apartments: 85,
-      priceFrom: 320000000,
-      image: "/api/placeholder/300/200"
-    },
-    {
-      id: 3,
-      name: "Vista Hermosa",
-      location: "Cali, Colombia",
-      apartments: 200,
-      priceFrom: 250000000,
-      image: "/api/placeholder/300/200"
-    }
-  ];
+
+  const projects = ProjectsService.featured(3);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('es-CO', {

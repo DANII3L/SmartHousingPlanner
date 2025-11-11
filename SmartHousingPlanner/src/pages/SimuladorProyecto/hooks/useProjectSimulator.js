@@ -275,7 +275,6 @@ export const useProjectSimulator = (project) => {
     const totalSum = updatedData.downPayment + updatedData.subsidyAmount;
 
     if (totalSum > updatedData.projectValue) {
-      console.log('Suma total (checkbox):', totalSum, 'Valor proyecto:', updatedData.projectValue);
       showExcessAlert(totalSum, updatedData.projectValue);
     }
 
