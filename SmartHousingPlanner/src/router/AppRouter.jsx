@@ -11,6 +11,7 @@ const UserInfoPage = lazy(() => import('../pages/User/MyAccount/UserInfoPage.jsx
 const MisPagosPage = lazy(() => import('../pages/User/MisPagos/MisPagosPage.jsx'));
 const FavoritosPage = lazy(() => import('../pages/User/Favoritos/FavoritosPage.jsx'));
 const MisSimulacionesPage = lazy(() => import('../pages/User/Simulaciones/MisSimulacionesPage.jsx'));
+const DashboardPage = lazy(() => import('../pages/User/Dashboard/DashboardPage.jsx'));
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
+          { path: '/dashboard', element: <DashboardPage /> },
           { path: '/user-info', element: <UserInfoPage /> },
           { path: '/mis-pagos', element: <MisPagosPage /> },
           { path: '/favoritos', element: <FavoritosPage /> },

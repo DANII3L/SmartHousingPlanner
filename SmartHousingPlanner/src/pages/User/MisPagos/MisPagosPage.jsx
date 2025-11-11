@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
-import PaymentCharts from '../../Home/PaymentCharts';
+import React, { useMemo, useState } from 'react';
+import PaymentComparisonModal from '../../../UI/components/PaymentComparisonModal';
 
 const MisPagosPage = () => {
-  const [activeProject, setActiveProject] = useState(null);
-
-  const userProjects = [
+  const userProjects = useMemo(() => ([
     {
       id: 1,
       name: "Torres del Sol",
@@ -15,7 +13,15 @@ const MisPagosPage = () => {
       monthlyPayment: 2500000,
       remainingMonths: 240,
       subsidy: 15000000,
-      status: "En proceso"
+      status: "En proceso",
+      paymentHistory: [
+        { label: 'Jun', year: 2024, required: 2500000, actual: 2450000 },
+        { label: 'Jul', year: 2024, required: 2500000, actual: 2550000 },
+        { label: 'Ago', year: 2024, required: 2500000, actual: 2400000 },
+        { label: 'Sep', year: 2024, required: 2500000, actual: 2500000 },
+        { label: 'Oct', year: 2024, required: 2500000, actual: 2650000 },
+        { label: 'Nov', year: 2024, required: 2500000, actual: 2520000 },
+      ],
     },
     {
       id: 2,
@@ -27,9 +33,21 @@ const MisPagosPage = () => {
       monthlyPayment: 3200000,
       remainingMonths: 220,
       subsidy: 20000000,
-      status: "Aprobado"
+      status: "Aprobado",
+      paymentHistory: [
+        { label: 'Jun', year: 2024, required: 3200000, actual: 3200000 },
+        { label: 'Jul', year: 2024, required: 3200000, actual: 3150000 },
+        { label: 'Ago', year: 2024, required: 3200000, actual: 3300000 },
+        { label: 'Sep', year: 2024, required: 3200000, actual: 3350000 },
+        { label: 'Oct', year: 2024, required: 3200000, actual: 3180000 },
+        { label: 'Nov', year: 2024, required: 3200000, actual: 3220000 },
+      ],
     }
-  ];
+  ]), []);
+
+  const [activeProject, setActiveProject] = useState(userProjects[0]);
+  const [comparisonProject, setComparisonProject] = useState(null);
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', {
@@ -105,6 +123,24 @@ const MisPagosPage = () => {
                       Subsidio: {formatCurrency(project.subsidy)}
                     </span>
                   </div>
+
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveProject(project);
+                        setComparisonProject(project);
+                        setIsComparisonOpen(true);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-100"
+                    >
+                      Ver gráfico de pagos
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12H9m6 4H9m12-4a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -153,20 +189,15 @@ const MisPagosPage = () => {
           </div>
         </div>
 
-        {/* Gráficos de Pagos */}
-        {activeProject && (
-          <div className="bg-white rounded-2xl shadow-lg p-8">
-            <div className="mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                Simulación: {activeProject.name}
-              </h3>
-              <p className="text-gray-600">
-                Visualiza cómo se distribuyen tus pagos para este proyecto específico
-              </p>
-            </div>
-            <PaymentCharts />
-          </div>
-        )}
+        <PaymentComparisonModal
+          isOpen={isComparisonOpen}
+          onClose={() => setIsComparisonOpen(false)}
+          title={comparisonProject ? `Pagos de ${comparisonProject.name}` : ''}
+          subtitle="Compara cada periodo con el valor requerido para mantenerte al día con tu plan hipotecario."
+          data={comparisonProject?.paymentHistory ?? []}
+          requiredLabel="Pago requerido"
+          actualLabel="Pago realizado"
+        />
       </div>
     </div>
   );

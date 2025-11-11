@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProjectSimulator from '../../SimuladorProyecto/ProjectSimulator';
 import { ProjectsService } from '../../../service/projects.js';
+import PaymentComparisonModal from '../../../UI/components/PaymentComparisonModal.jsx';
 
 const ProjectDetailPage = () => {
   const { id } = useParams();
@@ -9,6 +10,51 @@ const ProjectDetailPage = () => {
   const [showSimulator, setShowSimulator] = useState(false);
   const [project, setProject] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPaymentsModalOpen, setIsPaymentsModalOpen] = useState(false);
+
+  const upcomingPayments = useMemo(() => {
+    if (!project) return [];
+
+    const baseSource = project.priceFrom ?? project.price ?? 280000000;
+    const baseRequired = Math.round((baseSource * 0.3) / 24);
+    const baseEstimated = baseRequired - Math.round(baseRequired * 0.04);
+    const currentYear = new Date().getFullYear();
+    const periods = [
+      { label: 'Dic', year: currentYear },
+      { label: 'Ene', year: currentYear + 1 },
+      { label: 'Feb', year: currentYear + 1 },
+      { label: 'Mar', year: currentYear + 1 },
+      { label: 'Abr', year: currentYear + 1 },
+      { label: 'May', year: currentYear + 1 },
+      { label: 'Jun', year: currentYear + 1 },
+      { label: 'Jul', year: currentYear + 1 },
+      { label: 'Ago', year: currentYear + 1 },
+      { label: 'Sep', year: currentYear + 1 },
+      { label: 'Oct', year: currentYear + 1 },
+      { label: 'Nov', year: currentYear + 1 },
+      { label: 'Dic', year: currentYear + 1 },
+      { label: 'Ene', year: currentYear + 2 },
+      { label: 'Feb', year: currentYear + 2 },
+      { label: 'Mar', year: currentYear + 2 },
+      { label: 'Abr', year: currentYear + 2 },
+      { label: 'May', year: currentYear + 2 },
+      { label: 'Jun', year: currentYear + 2 },
+      { label: 'Jul', year: currentYear + 2 },
+      { label: 'Ago', year: currentYear + 2 },
+      { label: 'Sep', year: currentYear + 2 },
+    ];
+
+    return periods.map((period, index) => {
+      const required = baseRequired + index * 45000;
+      const estimated = baseEstimated + index * 38000;
+      return {
+        label: period.label,
+        year: period.year,
+        required,
+        actual: estimated,
+      };
+    });
+  }, [project]);
 
   useEffect(() => {
     let isMounted = true;
@@ -136,7 +182,7 @@ const ProjectDetailPage = () => {
                     Simular Financiamiento
                   </button>
                   <button 
-                    onClick={() => document.getElementById('simulador').scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => setIsPaymentsModalOpen(true)}
                     className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-6 rounded-xl transition-all duration-200"
                   >
                     Ver Gráficos de Pagos
@@ -155,6 +201,15 @@ const ProjectDetailPage = () => {
           onClose={() => setShowSimulator(false)} 
         />
       )}
+      <PaymentComparisonModal
+        isOpen={isPaymentsModalOpen}
+        onClose={() => setIsPaymentsModalOpen(false)}
+        title={project ? `Pagos estimados para ${project.name}` : 'Pagos estimados'}
+        subtitle="Revisa la proyección mensual calculada frente al pago objetivo sugerido para mantener el plan financiero al día."
+        data={upcomingPayments}
+        requiredLabel="Pago objetivo"
+        actualLabel="Pago estimado"
+      />
     </>
   );
 };

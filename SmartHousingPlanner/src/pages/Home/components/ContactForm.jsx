@@ -27,7 +27,7 @@ const ContactForm = () => {
       setIsSubmitting(false);
       setSubmitMessage('Gracias por tu interés. Nos pondremos en contacto contigo pronto.');
       setFormData({ nombre: '', email: '', telefono: '', mensaje: '' });
-      
+
       setTimeout(() => {
         setShowForm(false);
         setSubmitMessage('');
@@ -42,16 +42,16 @@ const ContactForm = () => {
   };
 
   return (
-    <div className="text-center mt-16">
+    <div className="text-center mt-16 mb-16">
       <div className="bg-gradient-to-r from-orange-100 to-blue-100 rounded-2xl p-8 max-w-4xl mx-auto">
         <h3 className="text-2xl font-bold text-gray-900 mb-4">¿Necesitas asesoría personalizada?</h3>
         <p className="text-gray-600 mb-6">
-          Déjanos tus datos y nuestro equipo se pondrá en contacto contigo para brindarte 
+          Déjanos tus datos y nuestro equipo se pondrá en contacto contigo para brindarte
           la mejor información sobre subsidios y programas de vivienda.
         </p>
-        
+
         {!showForm ? (
-          <button 
+          <button
             onClick={() => setShowForm(true)}
             className="cursor-pointer bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
           >
@@ -64,7 +64,7 @@ const ContactForm = () => {
                 {submitMessage}
               </div>
             )}
-            
+
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
               <div>
                 <label htmlFor="nombre" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -73,7 +73,7 @@ const ContactForm = () => {
                 <input
                   type="text"
                   id="nombre"
-                  name="nombre" 
+                  name="nombre"
                   required
                   value={formData.nombre}
                   onChange={handleChange}

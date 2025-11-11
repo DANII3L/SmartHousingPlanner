@@ -83,6 +83,21 @@ const Header = () => {
                 location.pathname === '/simulador' ? 'w-full' : 'w-0 group-hover:w-full'
               }`}></span>
             </Link>
+            {isAuthenticated && (
+              <Link 
+                to="/dashboard" 
+                className={`transition-colors duration-200 relative group ${
+                  location.pathname === '/dashboard' 
+                    ? 'text-blue-500 font-semibold' 
+                    : 'text-gray-700 hover:text-blue-500 font-medium'
+                }`}
+              >
+                Dashboard
+                <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-500 transition-all duration-200 ${
+                  location.pathname === '/dashboard' ? 'w-full' : 'w-0 group-hover:w-full'
+                }`}></span>
+              </Link>
+            )}
           </nav>
 
           <div className="hidden lg:flex items-center space-x-4">
@@ -118,6 +133,13 @@ const Header = () => {
 
               {isProfileDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+                  <Link 
+                    to="/dashboard" 
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
                   <Link 
                     to="/user-info" 
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
@@ -206,6 +228,19 @@ const Header = () => {
               >
                 Simular
               </Link>
+              {isAuthenticated && (
+                <Link 
+                  to="/dashboard" 
+                  className={`py-2 transition-colors duration-200 ${
+                    location.pathname === '/dashboard' 
+                      ? 'text-blue-500 font-semibold' 
+                      : 'text-gray-700 hover:text-blue-500 font-medium'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+              )}
               <div className="pt-4 border-t border-gray-200/50">
                 {!isAuthenticated ? (
                   <>
