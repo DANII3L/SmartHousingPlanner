@@ -1,9 +1,40 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useFavorites } from '../hooks/useFavorites';
+import { useFirebaseFavorites } from '../../../hooks/useFirebaseFavorites';
+import { useSweetAlert } from '../../../hooks/useSweetAlert';
+import { deleteProject as deleteProjectService } from '../../../services/firebase/projectsService';
 
-const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFavorite }) => {
-  const { toggleFavorite, isFavorite } = useFavorites();
+const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFavorite, onEdit, onDelete }) => {
+  const { toggleFavorite, favorites } = useFirebaseFavorites();
+  const { showConfirmation, showNotification } = useSweetAlert();
+  
+  // Derivar isFavorite de la lista de favoritos en lugar de estado separado
+  const isFavorite = useMemo(() => {
+    if (!project?.id || !favorites) return false;
+    return favorites.some(fav => fav.projectId === project.id || fav.id === project.id);
+  }, [project?.id, favorites]);
+
+  const handleDelete = useCallback(async () => {
+    const confirmed = await showConfirmation(
+      '¿Eliminar proyecto?',
+      `¿Estás seguro de que quieres eliminar "${project.name}"? Esta acción no se puede deshacer.`,
+      'Sí, eliminar'
+    );
+
+    if (confirmed) {
+      try {
+        const result = await deleteProjectService(project.id);
+        if (result.success) {
+          showNotification('success', 'Proyecto eliminado', 'El proyecto se ha eliminado correctamente');
+          onDelete?.(project.id);
+        } else {
+          showNotification('error', 'Error', result.error || 'Error al eliminar proyecto');
+        }
+      } catch (error) {
+        showNotification('error', 'Error', 'Error al eliminar proyecto');
+      }
+    }
+  }, [project.id, project.name, showConfirmation, showNotification, onDelete]);
   
   const formatPrice = (price) => {
     return new Intl.NumberFormat('es-CO', {
@@ -23,14 +54,31 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFa
     }
   };
 
+  const statusColor = useMemo(() => getStatusColor(project.status), [project.status]);
+
   if (cardStyle === 'compact') {
     return (
       <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden border border-gray-100">
         <div className="flex">
-          <div className="w-32 h-24 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0 relative">
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+          <div className="w-32 h-24 flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-blue-100 to-blue-200">
+            {project.image ? (
+              <img
+                src={project.image}
+                alt={project.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className={`w-full h-full flex items-center justify-center ${project.image ? 'hidden' : ''}`}
+            >
+              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
             <button
               onClick={(e) => {
                 e.preventDefault();
@@ -40,12 +88,12 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFa
                 } else {
                   toggleFavorite(project);
                 }
-              }}
-              className="absolute top-2 right-2 p-1 rounded-full bg-white/80 hover:bg-white transition-colors shadow-sm"
+            }}
+            className="absolute top-2 right-2 p-1 rounded-full bg-white/80 hover:bg-white transition-colors shadow-sm"
             >
               <svg 
-                className={`w-4 h-4 ${isFavorite(project.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`} 
-                fill={isFavorite(project.id) ? 'currentColor' : 'none'} 
+                className={`w-4 h-4 ${isFavorite ? 'text-red-500 fill-current' : 'text-gray-400'}`} 
+                fill={isFavorite ? 'currentColor' : 'none'} 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
               >
@@ -89,13 +137,25 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFa
       </div>
     );
   }
-  
-  const statusColor = useMemo(() => getStatusColor(project.status), [project.status]);
 
   return (
     <div className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100/50 hover:border-blue-200 hover:-translate-y-2">
       <div className="relative h-64 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100 flex items-center justify-center">
+        {project.image ? (
+          <img
+            src={project.image}
+            alt={project.name}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              const fallback = e.target.nextElementSibling;
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div 
+          className={`absolute inset-0 bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100 flex items-center justify-center ${project.image ? 'hidden' : ''}`}
+        >
           <div className="text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
               <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,12 +167,42 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFa
         </div>
         
         <div className="absolute top-4 left-4">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg ${statusColor}`}>
+          <span className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg backdrop-blur-sm ${statusColor}`}>
             {project.status}
           </span>
         </div>
         
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 flex gap-2">
+          {onEdit && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="p-2 rounded-full bg-white/90 hover:bg-white transition-all duration-200 shadow-lg hover:shadow-xl"
+              title="Editar proyecto"
+            >
+              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDelete();
+              }}
+              className="p-2 rounded-full bg-white/90 hover:bg-white transition-all duration-200 shadow-lg hover:shadow-xl"
+              title="Eliminar proyecto"
+            >
+              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -124,10 +214,11 @@ const ProjectCard = ({ project, cardStyle = 'default', onDetailClick, onRemoveFa
               }
             }}
             className="p-2 rounded-full bg-white/90 hover:bg-white transition-all duration-200 shadow-lg hover:shadow-xl"
+            title="Agregar a favoritos"
           >
             <svg 
-              className={`w-5 h-5 transition-colors duration-200 ${isFavorite(project.id) ? 'text-red-500 fill-current' : 'text-gray-400 hover:text-red-400'}`} 
-              fill={isFavorite(project.id) ? 'currentColor' : 'none'} 
+              className={`w-5 h-5 transition-colors duration-200 ${isFavorite ? 'text-red-500 fill-current' : 'text-gray-400 hover:text-red-400'}`} 
+              fill={isFavorite ? 'currentColor' : 'none'} 
               stroke="currentColor" 
               viewBox="0 0 24 24"
             >

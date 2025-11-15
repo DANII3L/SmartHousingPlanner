@@ -6,12 +6,12 @@ import ProtectedRoute from '../UI/components/ProtectedRoute.jsx';
 const HomePage = lazy(() => import('../pages/Home/HomePage.jsx'));
 const ProjectsPage = lazy(() => import('../pages/Proyectos/components/ProjectsPage.jsx'));
 const ProjectDetailPage = lazy(() => import('../pages/Proyectos/components/ProjectDetailPage.jsx'));
-const SimuladorPage = lazy(() => import('../pages/SimuladorPagos/SimuladorPage.jsx'));
 const UserInfoPage = lazy(() => import('../pages/User/MyAccount/UserInfoPage.jsx'));
 const MisPagosPage = lazy(() => import('../pages/User/MisPagos/MisPagosPage.jsx'));
 const FavoritosPage = lazy(() => import('../pages/User/Favoritos/FavoritosPage.jsx'));
 const MisSimulacionesPage = lazy(() => import('../pages/User/Simulaciones/MisSimulacionesPage.jsx'));
 const DashboardPage = lazy(() => import('../pages/User/Dashboard/DashboardPage.jsx'));
+const AdminPaymentsPage = lazy(() => import('../pages/Admin/Payments/AdminPaymentsPage.jsx'));
 
 const router = createBrowserRouter([
   {
@@ -20,7 +20,6 @@ const router = createBrowserRouter([
       { path: '/', element: <HomePage /> },
       { path: '/proyectos', element: <ProjectsPage /> },
       { path: '/proyectos/:id/simulador', element: <ProjectDetailPage /> },
-      { path: '/simulador', element: <SimuladorPage /> },
       {
         element: <ProtectedRoute />,
         children: [
@@ -30,6 +29,10 @@ const router = createBrowserRouter([
           { path: '/favoritos', element: <FavoritosPage /> },
           { path: '/mis-simulaciones', element: <MisSimulacionesPage /> },
         ],
+      },
+      {
+        element: <ProtectedRoute roles={['admin']} />,
+        children: [{ path: '/pagos-proyectos', element: <AdminPaymentsPage /> }],
       },
       { path: '*', element: <Navigate to="/" replace /> },
     ],

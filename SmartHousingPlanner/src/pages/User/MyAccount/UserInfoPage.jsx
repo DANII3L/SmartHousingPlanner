@@ -1,6 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+
+// Función para formatear números con separadores de miles
+const formatNumber = (value) => {
+  if (!value && value !== 0) return '';
+  const cleanValue = value.toString().replace(/[^\d]/g, '');
+  if (!cleanValue) return '';
+  const number = parseFloat(cleanValue);
+  return isNaN(number) ? '' : number.toLocaleString('es-CO');
+};
+
+// Función para parsear números formateados
+const parseFormattedNumber = (value) => {
+  if (!value) return 0;
+  const cleanValue = value.replace(/[^\d]/g, '');
+  return cleanValue ? parseFloat(cleanValue) : 0;
+};
 
 const UserInfoPage = () => {
   const navigate = useNavigate();
@@ -26,6 +42,7 @@ const UserInfoPage = () => {
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const [formattedIncome, setFormattedIncome] = useState('');
 
   // Cargar datos del usuario cuando el componente se monte
   useEffect(() => {
@@ -35,6 +52,8 @@ const UserInfoPage = () => {
       const nombre = nameParts[0] || '';
       const apellido = nameParts.slice(1).join(' ') || '';
 
+      const monthlyIncome = user.monthlyIncome || '';
+      
       setFormData({
         nombre,
         apellido,
@@ -46,22 +65,42 @@ const UserInfoPage = () => {
         genero: user.gender || 'Masculino',
         estadoCivil: user.maritalStatus || 'Soltero',
         ocupacion: user.occupation || '',
-        ingresos: user.monthlyIncome || '',
+        ingresos: monthlyIncome,
         direccion: user.address || '',
         ciudad: user.city || '',
         departamento: user.department || '',
         codigoPostal: user.postalCode || ''
       });
+      
+      // Formatear ingresos iniciales
+      if (monthlyIncome) {
+        setFormattedIncome(formatNumber(monthlyIncome));
+      } else {
+        setFormattedIncome('');
+      }
+      
       setIsLoading(false);
     }
   }, [user]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Si es el campo de ingresos, aplicar formato de moneda
+    if (name === 'ingresos') {
+      const numericValue = parseFormattedNumber(value);
+      const formatted = formatNumber(numericValue.toString());
+      setFormattedIncome(formatted);
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue.toString(),
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
     
     // Limpiar error cuando el usuario empiece a escribir
     if (errors[name]) {
@@ -70,7 +109,7 @@ const UserInfoPage = () => {
         [name]: ''
       }));
     }
-  };
+  }, [errors]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -104,7 +143,7 @@ const UserInfoPage = () => {
         gender: formData.genero,
         maritalStatus: formData.estadoCivil,
         occupation: formData.ocupacion,
-        monthlyIncome: formData.ingresos,
+        monthlyIncome: parseFloat(formData.ingresos) || 0,
         address: formData.direccion,
         city: formData.ciudad,
         department: formData.departamento,
@@ -129,6 +168,8 @@ const UserInfoPage = () => {
       const nombre = nameParts[0] || '';
       const apellido = nameParts.slice(1).join(' ') || '';
 
+      const monthlyIncome = user.monthlyIncome || '';
+      
       setFormData({
         nombre,
         apellido,
@@ -140,12 +181,19 @@ const UserInfoPage = () => {
         genero: user.gender || 'Masculino',
         estadoCivil: user.maritalStatus || 'Soltero',
         ocupacion: user.occupation || '',
-        ingresos: user.monthlyIncome || '',
+        ingresos: monthlyIncome,
         direccion: user.address || '',
         ciudad: user.city || '',
         departamento: user.department || '',
         codigoPostal: user.postalCode || ''
       });
+      
+      // Formatear ingresos al cancelar
+      if (monthlyIncome) {
+        setFormattedIncome(formatNumber(monthlyIncome));
+      } else {
+        setFormattedIncome('');
+      }
     }
   };
 
@@ -357,14 +405,22 @@ const UserInfoPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Fecha de Nacimiento *
                     </label>
-                    <input
-                      type="date"
-                      name="fechaNacimiento"
-                      value={formData.fechaNacimiento}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className={getFieldClasses('fechaNacimiento')}
-                    />
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="date"
+                        name="fechaNacimiento"
+                        value={formData.fechaNacimiento}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        max={new Date().toISOString().split('T')[0]}
+                        className={`${getFieldClasses('fechaNacimiento')} pl-10 ${isEditing ? 'cursor-pointer' : ''}`}
+                      />
+                    </div>
                     {errors.fechaNacimiento && <p className="text-red-500 text-sm mt-1">{errors.fechaNacimiento}</p>}
                   </div>
 
@@ -432,17 +488,26 @@ const UserInfoPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ingresos Mensuales *
+                      Ingresos Mensuales (COP) *
                     </label>
-                    <input
-                      type="number"
-                      name="ingresos"
-                      value={formData.ingresos}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className={getFieldClasses('ingresos')}
-                    />
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 font-medium">$</span>
+                      </div>
+                      <input
+                        type="text"
+                        name="ingresos"
+                        value={formattedIncome}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        placeholder="2.500.000"
+                        className={`${getFieldClasses('ingresos')} pl-8`}
+                      />
+                    </div>
                     {errors.ingresos && <p className="text-red-500 text-sm mt-1">{errors.ingresos}</p>}
+                    <p className="mt-1 text-xs text-gray-500">
+                      El formato se aplica automáticamente
+                    </p>
                   </div>
                 </div>
 

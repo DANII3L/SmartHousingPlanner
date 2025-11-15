@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 
-// Hook genérico para manejar localStorage
 export const useLocalStorage = (key, initialValue) => {
   const [storedValue, setStoredValue] = useState(() => {
     try {
@@ -11,14 +10,12 @@ export const useLocalStorage = (key, initialValue) => {
     }
   });
 
-  // Escuchar cambios en localStorage desde otras instancias
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === key && e.newValue !== null) {
         try {
           setStoredValue(JSON.parse(e.newValue));
         } catch (error) {
-          // Error al parsear datos
         }
       } else if (e.key === key && e.newValue === null) {
         setStoredValue(initialValue);
@@ -35,7 +32,6 @@ export const useLocalStorage = (key, initialValue) => {
       setStoredValue(valueToStore);
       localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
-      // Error al guardar datos
     }
   };
 
@@ -55,7 +51,6 @@ export const useLocalStorage = (key, initialValue) => {
         setValue(newValue);
       }
     } catch (error) {
-      // Error al remover elemento
     }
   };
 
@@ -64,7 +59,6 @@ export const useLocalStorage = (key, initialValue) => {
       setStoredValue(initialValue);
       localStorage.removeItem(key);
     } catch (error) {
-      // Error al limpiar datos
     }
   };
 

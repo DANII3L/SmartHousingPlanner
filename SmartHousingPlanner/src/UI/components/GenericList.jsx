@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 
 const GenericList = ({ 
   // Configuración básica
@@ -30,22 +30,22 @@ const GenericList = ({
   loading = false,
   error = null
 }) => {
-  const [items, setItems] = useState(data);
-  const [internalLoading, setInternalLoading] = useState(false);
-  const [internalError, setInternalError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState("Todos");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  useEffect(() => {
-    setItems(data);
+  const normalizedItems = useMemo(() => {
+    if (!Array.isArray(data)) {
+      return [];
+    }
+    return data;
   }, [data]);
 
   const filteredItems = useMemo(() => {
-    if (!searchTerm) return items;
+    if (!searchTerm) return normalizedItems;
     
-    return items.filter(item => {
+    return normalizedItems.filter(item => {
       return searchFields.some(field => {
         const value = item[field];
         if (typeof value === 'string') {
@@ -54,11 +54,22 @@ const GenericList = ({
         return false;
       });
     });
-  }, [items, searchTerm, searchFields]);
+  }, [normalizedItems, searchTerm, searchFields]);
 
   // Filtro por categoría (status)
   const filteredAndCategorizedItems = useMemo(() => {
-    if (selectedFilter === "Todos") return filteredItems;
+    if (selectedFilter === "Todos") {
+      return filteredItems;
+    }
+
+    if (selectedFilter === "Menor a mayor") {
+      return [...filteredItems].sort((a, b) => (a.priceFrom || 0) - (b.priceFrom || 0));
+    }
+
+    if (selectedFilter === "Mayor a menor") {
+      return [...filteredItems].sort((a, b) => (b.priceFrom || 0) - (a.priceFrom || 0));
+    }
+
     return filteredItems.filter(item => item.status === selectedFilter);
   }, [filteredItems, selectedFilter]);
 
@@ -110,8 +121,8 @@ const GenericList = ({
     }
   };
 
-  const isInternalLoading = loading !== false ? loading : internalLoading;
-  const isInternalError = error !== null ? error : internalError;
+  const isLoading = typeof loading === 'boolean' ? loading : false;
+  const errorMessage = error ?? null;
 
   return (
     <div className={containerClassName}>
@@ -175,21 +186,21 @@ const GenericList = ({
       )}
 
       {/* Loading State */}
-      {isInternalLoading && (
+      {isLoading && (
         <div className="flex justify-center items-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       )}
 
       {/* Error State */}
-      {isInternalError && (
+      {errorMessage && (
         <div className="text-center py-20">
-          <div className="text-red-500 text-lg font-medium">{isInternalError}</div>
+          <div className="text-red-500 text-lg font-medium">{errorMessage}</div>
         </div>
       )}
 
       {/* Items Grid */}
-      {!isInternalLoading && !isInternalError && (
+      {!isLoading && !errorMessage && (
         <>
           <div className={getGridClassName()}>
             {paginatedItems.map((item, index) => renderItemContent(item, startIndex + index))}
@@ -236,7 +247,7 @@ const GenericList = ({
       )}
 
       {/* No Results */}
-      {!isInternalLoading && !isInternalError && filteredAndCategorizedItems.length === 0 && (
+      {!isLoading && !errorMessage && filteredAndCategorizedItems.length === 0 && (
         <div className="text-center py-20">
           <div className="text-gray-500 text-lg font-medium">{emptyMessage}</div>
           {emptySubMessage && (

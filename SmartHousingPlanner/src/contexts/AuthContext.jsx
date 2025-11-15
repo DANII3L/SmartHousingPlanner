@@ -1,28 +1,14 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useSweetAlert } from '../hooks/useSweetAlert';
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+  updateUserProfile,
+  onAuthStateChange,
+} from '../services/firebase/authService';
 
 const AuthContext = createContext();
-
-const DEMO_USER = {
-  id: 1,
-  name: 'Daniel',
-  email: 'daniel@smarthousing.com',
-  role: 'user',
-  avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-  createdAt: new Date().toISOString(),
-};
-
-const generateToken = () =>
-  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-const sanitizeUser = (user) => {
-  if (!user) return null;
-  const { password, ...rest } = user;
-  return rest;
-};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -33,27 +19,42 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [session, setSession] = useLocalStorage('smartHousing_session', null);
-  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(session?.token));
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const { showNotification } = useSweetAlert();
 
+  const isAuthenticated = useMemo(() => Boolean(user), [user]);
+  const isAdmin = useMemo(() => user?.role === 'admin', [user?.role]);
+
+  const hasRole = useMemo(() => (role) => {
+    if (!user) return false;
+    return user.role === role;
+  }, [user]);
+
   useEffect(() => {
-    setIsAuthenticated(Boolean(session?.token));
-  }, [session]);
+    const unsubscribe = onAuthStateChange((userData) => {
+      setUser(userData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const login = async (email, password) => {
-    const demoPassword = '123456';
-
-    if (email === DEMO_USER.email && password === demoPassword) {
-      const token = generateToken();
-      const user = sanitizeUser(DEMO_USER);
-      setSession({ token, user });
-      showNotification('success', '¡Bienvenido!', `Hola ${user.name}, has iniciado sesión correctamente`);
-      return { success: true, user };
+    try {
+      const result = await loginUser(email, password);
+      if (result.success) {
+        setUser(result.user);
+        showNotification('success', '¡Bienvenido!', `Hola ${result.user.name}, has iniciado sesión correctamente`);
+        return { success: true, user: result.user };
+      } else {
+        showNotification('error', 'Error de autenticación', result.error || 'Email o contraseña incorrectos');
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      showNotification('error', 'Error de autenticación', 'Ocurrió un error al iniciar sesión');
+      return { success: false, error: 'Error al iniciar sesión' };
     }
-
-    showNotification('error', 'Error de autenticación', 'Email o contraseña incorrectos');
-    return { success: false, error: 'Credenciales incorrectas' };
   };
 
   const register = async ({ name, email, password, confirmPassword }) => {
@@ -67,48 +68,90 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: 'Contraseña muy corta' };
     }
 
-    const token = generateToken();
-    const newUser = {
-      id: Date.now(),
-      name,
-      email,
-      role: 'user',
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=ffffff&size=150`,
-      createdAt: new Date().toISOString(),
-    };
-
-    setSession({ token, user: newUser });
-    showNotification('success', '¡Registro exitoso!', `Bienvenido ${name}, tu cuenta ha sido creada`);
-    return { success: true, user: newUser };
+    try {
+      const result = await registerUser({ name, email, password });
+      if (result.success) {
+        setUser(result.user);
+        showNotification('success', '¡Registro exitoso!', `Bienvenido ${name}, tu cuenta ha sido creada`);
+        return { success: true, user: result.user };
+      } else {
+        showNotification('error', 'Error de registro', result.error || 'Error al registrar usuario');
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      showNotification('error', 'Error de registro', 'Ocurrió un error al registrar usuario');
+      return { success: false, error: 'Error al registrar usuario' };
+    }
   };
 
-  const logout = () => {
-    setSession(null);
-    showNotification('info', 'Sesión cerrada', 'Has cerrado sesión correctamente');
+  const logout = async () => {
+    try {
+      const result = await logoutUser();
+      if (result.success) {
+        setUser(null);
+        showNotification('info', 'Sesión cerrada', 'Has cerrado sesión correctamente');
+      } else {
+        showNotification('error', 'Error', result.error || 'Error al cerrar sesión');
+      }
+    } catch (error) {
+      showNotification('error', 'Error', 'Error al cerrar sesión');
+    }
   };
 
-  const updateProfile = (updatedData) => {
-    if (!session?.user) {
+  const updateProfile = async (updatedData) => {
+    if (!user?.id) {
       return { success: false, error: 'Usuario no autenticado' };
     }
 
-    const updatedUser = { ...session.user, ...updatedData };
-    setSession({ ...session, user: updatedUser });
-    showNotification('success', 'Perfil actualizado', 'Tus datos han sido actualizados');
-    return { success: true, user: updatedUser };
+    try {
+      const result = await updateUserProfile(user.id, updatedData);
+      if (result.success) {
+        setUser(result.user);
+        
+        // Si hay advertencia sobre el email, mostrarla como info
+        if (result.warning) {
+          showNotification('warning', 'Perfil actualizado', result.warning);
+        } else {
+          showNotification('success', 'Perfil actualizado', 'Tus datos han sido actualizados');
+        }
+        
+        return { success: true, user: result.user, warning: result.warning };
+      } else {
+        showNotification('error', 'Error', result.error || 'Error al actualizar perfil');
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('Error al actualizar perfil:', error);
+      showNotification('error', 'Error', 'Error al actualizar perfil');
+      return { success: false, error: 'Error al actualizar perfil' };
+    }
   };
 
   const value = useMemo(
     () => ({
-      user: session?.user ?? null,
+      user,
       isAuthenticated,
+      isAdmin,
+      hasRole,
+      loading,
       login,
       register,
       logout,
       updateProfile,
     }),
-    [session, isAuthenticated],
+    [user, loading, isAdmin, hasRole],
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

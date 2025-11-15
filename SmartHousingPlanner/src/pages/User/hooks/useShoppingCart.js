@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react';
 import { useLocalStorage } from '../../../hooks/useLocalStorage';
 import { useSweetAlert } from '../../../hooks/useSweetAlert';
 
@@ -6,7 +7,7 @@ export const useShoppingCart = () => {
   const [cart, setCart, removeCartItem, clearCart] = useLocalStorage('smartHousing_cart', []);
   const { showNotification } = useSweetAlert();
 
-  const addToCart = (item) => {
+  const addToCart = useCallback((item) => {
     const existingItem = cart.find(cartItem => cartItem.id === item.id);
     if (existingItem) {
       setCart(prev => prev.map(cartItem => 
@@ -19,9 +20,9 @@ export const useShoppingCart = () => {
       setCart(prev => [...prev, { ...item, quantity: 1 }]);
       showNotification('success', '¡Agregado al carrito!', `${item.name || 'Producto'} se agregó al carrito`);
     }
-  };
+  }, [cart, setCart, showNotification]);
 
-  const updateQuantity = (itemId, quantity) => {
+  const updateQuantity = useCallback((itemId, quantity) => {
     if (quantity <= 0) {
       const itemToRemove = cart.find(item => item.id === itemId);
       if (itemToRemove) {
@@ -38,30 +39,34 @@ export const useShoppingCart = () => {
         showNotification('success', 'Cantidad actualizada', `Cantidad de ${updatedItem.name || 'producto'} actualizada a ${quantity}`);
       }
     }
-  };
+  }, [cart, setCart, removeCartItem, showNotification]);
 
-  const getTotalItems = () => {
+  const totalItems = useMemo(() => {
     return cart.reduce((total, item) => total + item.quantity, 0);
-  };
+  }, [cart]);
 
-  const getTotalPrice = () => {
+  const totalPrice = useMemo(() => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
+  }, [cart]);
 
-  const removeFromCart = (itemId) => {
+  // Funciones wrapper para mantener la compatibilidad
+  const getTotalItems = useCallback(() => totalItems, [totalItems]);
+  const getTotalPrice = useCallback(() => totalPrice, [totalPrice]);
+
+  const removeFromCart = useCallback((itemId) => {
     const itemToRemove = cart.find(item => item.id === itemId);
     if (itemToRemove) {
       removeCartItem({ id: itemId });
       showNotification('info', 'Eliminado del carrito', `${itemToRemove.name || 'Producto'} se eliminó del carrito`);
     }
-  };
+  }, [cart, removeCartItem, showNotification]);
 
-  const clearCartWithNotification = () => {
+  const clearCartWithNotification = useCallback(() => {
     if (cart.length > 0) {
       clearCart();
       showNotification('warning', 'Carrito vaciado', 'Se eliminaron todos los productos del carrito');
     }
-  };
+  }, [cart.length, clearCart, showNotification]);
 
   return {
     cart,

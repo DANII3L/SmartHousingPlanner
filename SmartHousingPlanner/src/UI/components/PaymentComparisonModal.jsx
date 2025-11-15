@@ -31,6 +31,14 @@ const PaymentComparisonModal = ({
     }
   })
 
+  const averageDiff = useMemo(() => {
+    if (!enhancedData.length) {
+      return 0
+    }
+    const total = enhancedData.reduce((acc, item) => acc + item.diff, 0)
+    return Math.round(total / enhancedData.length)
+  }, [enhancedData])
+
   const chartData = useMemo(() => {
     const rows = enhancedData.map((item) => {
       const label = item.year ? `${item.label} ${item.year}` : item.label
@@ -179,18 +187,22 @@ const PaymentComparisonModal = ({
               </div>
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <dt className="text-xs uppercase tracking-wide text-slate-500">Diferencia promedio</dt>
-                <dd className="mt-1 text-lg font-semibold text-slate-900">
-                  {formatCurrency(
-                    Math.round(
-                      enhancedData.reduce((acc, item) => acc + item.diff, 0) / enhancedData.length || 0,
-                    ),
-                  )}
+                <dd
+                  className={`mt-1 text-lg font-semibold ${
+                    averageDiff > 0 ? 'text-emerald-600' : averageDiff < 0 ? 'text-rose-600' : 'text-slate-900'
+                  }`}
+                >
+                  {formatCurrency(averageDiff)}
                 </dd>
               </div>
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <dt className="text-xs uppercase tracking-wide text-slate-500">Periodos en balance</dt>
+                <dt className="text-xs uppercase tracking-wide text-slate-500">Periodos en balance o superior</dt>
                 <dd className="mt-1 text-lg font-semibold text-blue-600">
-                  {enhancedData.filter((item) => item.status === 'equal').length} / {enhancedData.length}
+                  {
+                    enhancedData.filter((item) => item.status === 'equal' || item.status === 'above')
+                      .length
+                  }{' '}
+                  / {enhancedData.length}
                 </dd>
               </div>
             </dl>

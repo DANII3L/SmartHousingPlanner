@@ -12,7 +12,6 @@ const HomePage = () => {
       <ProjectsSection />
       <SubsidiesSection />
       <PurchaseSteps />
-      <ContactForm />
     </>
   );
 };

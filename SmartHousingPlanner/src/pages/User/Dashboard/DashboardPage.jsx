@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Chart } from 'react-google-charts';
-import { useFavorites } from '../../Proyectos/hooks/useFavorites';
-import { useSimulations } from '../../../hooks/useSimulations';
-import { PROJECTS_MOCK, ProjectsService } from '../../../service/projects.js';
+import { useFirebaseFavorites } from '../../../hooks/useFirebaseFavorites';
+import { useFirebaseSimulations } from '../../../hooks/useFirebaseSimulations';
+import { useFeaturedProjects } from '../../../hooks/useFirebaseProjects';
 import { useAuth } from '../../../contexts/AuthContext.jsx';
 
 const formatCurrency = (amount) =>
@@ -14,8 +14,9 @@ const formatCurrency = (amount) =>
   }).format(amount);
 
 const DashboardPage = () => {
-  const { favorites } = useFavorites();
-  const { simulations } = useSimulations();
+  const { favorites } = useFirebaseFavorites();
+  const { simulations } = useFirebaseSimulations();
+  const { projects: featuredProjects } = useFeaturedProjects(6);
   const { isAuthenticated, user } = useAuth();
   const [selectedPaymentView, setSelectedPaymentView] = useState('mensual');
 
@@ -51,29 +52,9 @@ const DashboardPage = () => {
     };
   }, [simulations]);
 
-  const paymentSampleData = useMemo(
-    () => ({
-      mensual: [
-        { label: 'Ene 24', value: 2450000 },
-        { label: 'Feb 24', value: 2480000 },
-        { label: 'Mar 24', value: 2520000 },
-        { label: 'Abr 24', value: 2520000 },
-        { label: 'May 24', value: 2550000 },
-        { label: 'Jun 24', value: 2580000 },
-      ],
-      anual: [
-        { year: '2024', principal: 25000000, interest: 7800000 },
-        { year: '2025', principal: 29500000, interest: 7200000 },
-        { year: '2026', principal: 34000000, interest: 6600000 },
-        { year: '2027', principal: 38200000, interest: 6100000 },
-        { year: '2028', principal: 41500000, interest: 5600000 },
-      ],
-    }),
-    [],
-  );
 
   const statusDistribution = useMemo(() => {
-    const projects = ProjectsService?.featured ? ProjectsService.featured(6) : PROJECTS_MOCK.slice(0, 6);
+    const projects = featuredProjects || [];
     const counts = projects.reduce((acc, project) => {
       acc[project.status] = (acc[project.status] ?? 0) + 1;
       return acc;
@@ -85,7 +66,7 @@ const DashboardPage = () => {
       value,
       percentage: total ? Math.round((value / total) * 100) : 0,
     }));
-  }, []);
+  }, [featuredProjects]);
 
   const statusChartData = useMemo(() => {
     return [
@@ -117,33 +98,18 @@ const DashboardPage = () => {
     [],
   );
 
-  const fallbackPaymentInsights = useMemo(() => {
-    const monthlyAverage =
-      paymentSampleData.mensual.reduce((acc, item) => acc + item.value, 0) / paymentSampleData.mensual.length;
-    const monthlyVariation =
-      paymentSampleData.mensual.length > 1
-        ? ((paymentSampleData.mensual.at(-1).value - paymentSampleData.mensual[0].value) /
-            paymentSampleData.mensual[0].value) *
-          100
-        : 0;
-
-    const totalPrincipal = paymentSampleData.anual.reduce((acc, item) => acc + item.principal, 0);
-    const totalInterest = paymentSampleData.anual.reduce((acc, item) => acc + item.interest, 0);
-
-    return {
-      monthlyData: paymentSampleData.mensual,
-      monthlyAverage,
-      monthlyVariation,
-      maxMonthly: Math.max(...paymentSampleData.mensual.map((item) => item.value)),
-      annualData: paymentSampleData.anual,
-      totalPrincipal,
-      totalInterest,
-    };
-  }, [paymentSampleData]);
-
   const paymentInsights = useMemo(() => {
     if (!simulations.length) {
-      return fallbackPaymentInsights;
+      // Si no hay simulaciones, retornar estructura vacía
+      return {
+        monthlyData: [],
+        monthlyAverage: 0,
+        monthlyVariation: 0,
+        maxMonthly: 0,
+        annualData: [],
+        totalPrincipal: 0,
+        totalInterest: 0,
+      };
     }
 
     const monthlyMap = new Map();
@@ -222,15 +188,15 @@ const DashboardPage = () => {
     const totalInterest = annualData.reduce((acc, item) => acc + item.interest, 0);
 
     return {
-      monthlyData: monthlyData.length ? monthlyData : fallbackPaymentInsights.monthlyData,
-      monthlyAverage: monthlyData.length ? monthlyAverage : fallbackPaymentInsights.monthlyAverage,
-      monthlyVariation: monthlyData.length ? monthlyVariation : fallbackPaymentInsights.monthlyVariation,
-      maxMonthly: monthlyData.length ? maxMonthly : fallbackPaymentInsights.maxMonthly,
-      annualData: annualData.length ? annualData : fallbackPaymentInsights.annualData,
-      totalPrincipal: annualData.length ? totalPrincipal : fallbackPaymentInsights.totalPrincipal,
-      totalInterest: annualData.length ? totalInterest : fallbackPaymentInsights.totalInterest,
+      monthlyData: monthlyData.length ? monthlyData : [],
+      monthlyAverage: monthlyData.length ? monthlyAverage : 0,
+      monthlyVariation: monthlyData.length ? monthlyVariation : 0,
+      maxMonthly: monthlyData.length ? maxMonthly : 0,
+      annualData: annualData.length ? annualData : [],
+      totalPrincipal: annualData.length ? totalPrincipal : 0,
+      totalInterest: annualData.length ? totalInterest : 0,
     };
-  }, [simulations, fallbackPaymentInsights]);
+  }, [simulations]);
 
   const timelineChartData = useMemo(() => {
     if (selectedPaymentView === 'mensual') {

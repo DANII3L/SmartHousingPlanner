@@ -10,9 +10,9 @@ const Header = () => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const location = useLocation();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isAdmin } = useAuth();
   const { openLoginModal, openRegisterModal } = useAuthModalContext();
-  
+
   // Manejar redirección después del login
   useRedirectAfterLogin();
 
@@ -44,58 +44,39 @@ const Header = () => {
           </Link>
 
           <nav className="hidden lg:flex items-center space-x-8">
-            <Link 
-              to="/" 
-              className={`transition-colors duration-200 relative group ${
-                location.pathname === '/' 
-                  ? 'text-blue-500 font-semibold' 
+            <Link
+              to="/"
+              className={`transition-colors duration-200 relative group ${location.pathname === '/'
+                  ? 'text-blue-500 font-semibold'
                   : 'text-gray-700 hover:text-blue-500 font-medium'
-              }`}
+                }`}
             >
               Inicio
-              <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-500 transition-all duration-200 ${
-                location.pathname === '/' ? 'w-full' : 'w-0 group-hover:w-full'
-              }`}></span>
+              <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-500 transition-all duration-200 ${location.pathname === '/' ? 'w-full' : 'w-0 group-hover:w-full'
+                }`}></span>
             </Link>
-            <Link 
-              to="/proyectos" 
-              className={`transition-colors duration-200 relative group ${
-                location.pathname === '/proyectos' 
-                  ? 'text-blue-500 font-semibold' 
+            <Link
+              to="/proyectos"
+              className={`transition-colors duration-200 relative group ${location.pathname === '/proyectos'
+                  ? 'text-blue-500 font-semibold'
                   : 'text-gray-700 hover:text-blue-500 font-medium'
-              }`}
+                }`}
             >
               Catálogo
-              <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-500 transition-all duration-200 ${
-                location.pathname === '/proyectos' ? 'w-full' : 'w-0 group-hover:w-full'
-              }`}></span>
-            </Link>
-            <Link 
-              to="/simulador" 
-              className={`transition-colors duration-200 relative group ${
-                location.pathname === '/simulador' 
-                  ? 'text-blue-500 font-semibold' 
-                  : 'text-gray-700 hover:text-blue-500 font-medium'
-              }`}
-            >
-              Simular
-              <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-500 transition-all duration-200 ${
-                location.pathname === '/simulador' ? 'w-full' : 'w-0 group-hover:w-full'
-              }`}></span>
+              <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-500 transition-all duration-200 ${location.pathname === '/proyectos' ? 'w-full' : 'w-0 group-hover:w-full'
+                }`}></span>
             </Link>
             {isAuthenticated && (
-              <Link 
-                to="/dashboard" 
-                className={`transition-colors duration-200 relative group ${
-                  location.pathname === '/dashboard' 
-                    ? 'text-blue-500 font-semibold' 
+              <Link
+                to="/dashboard"
+                className={`transition-colors duration-200 relative group ${location.pathname === '/dashboard'
+                    ? 'text-blue-500 font-semibold'
                     : 'text-gray-700 hover:text-blue-500 font-medium'
-                }`}
+                  }`}
               >
                 Dashboard
-                <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-500 transition-all duration-200 ${
-                  location.pathname === '/dashboard' ? 'w-full' : 'w-0 group-hover:w-full'
-                }`}></span>
+                <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-500 transition-all duration-200 ${location.pathname === '/dashboard' ? 'w-full' : 'w-0 group-hover:w-full'
+                  }`}></span>
               </Link>
             )}
           </nav>
@@ -103,13 +84,13 @@ const Header = () => {
           <div className="hidden lg:flex items-center space-x-4">
             {!isAuthenticated ? (
               <>
-                <button 
+                <button
                   onClick={openLoginModal}
                   className="px-6 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200"
                 >
                   Iniciar sesión
                 </button>
-                <button 
+                <button
                   onClick={openRegisterModal}
                   className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
@@ -118,7 +99,7 @@ const Header = () => {
               </>
             ) : (
               <div className="relative" ref={dropdownRef}>
-                <button 
+                <button
                   onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                   className="flex items-center space-x-2 bg-gray-50/80 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-200/50 hover:bg-gray-100/80 transition-colors duration-200"
                 >
@@ -131,60 +112,69 @@ const Header = () => {
                   <HiChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-              {isProfileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
-                  <Link 
-                    to="/dashboard" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                    onClick={() => setIsProfileDropdownOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link 
-                    to="/user-info" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                    onClick={() => setIsProfileDropdownOpen(false)}
-                  >
-                    Mi Perfil
-                  </Link>
-                  <Link 
-                    to="/mis-pagos" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                    onClick={() => setIsProfileDropdownOpen(false)}
-                  >
-                    Mis Pagos
-                  </Link>
-                  <Link 
-                    to="/favoritos" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                    onClick={() => setIsProfileDropdownOpen(false)}
-                  >
-                    Proyectos Favoritos
-                  </Link>
-                  <Link 
-                    to="/mis-simulaciones" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                    onClick={() => setIsProfileDropdownOpen(false)}
-                  >
-                    Mis Simulaciones
-                  </Link>
-                  <hr className="my-1 border-gray-200" />
-                  <button 
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors duration-200"
-                    onClick={() => {
-                      logout();
-                      setIsProfileDropdownOpen(false);
-                    }}
-                  >
-                    Cerrar Sesión
-                  </button>
-                </div>
-              )}
+                {isProfileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+                    <Link
+                      to="/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      to="/user-info"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                    >
+                      Mi Perfil
+                    </Link>
+                    <Link
+                      to="/mis-pagos"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                    >
+                      Mis Pagos
+                    </Link>
+                    <Link
+                      to="/favoritos"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                    >
+                      Proyectos Favoritos
+                    </Link>
+                    <Link
+                      to="/mis-simulaciones"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                    >
+                      Mis Simulaciones
+                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/pagos-proyectos"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        Pagos Proyectos
+                      </Link>
+                    )}
+                    <hr className="my-1 border-gray-200" />
+                    <button
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors duration-200"
+                      onClick={() => {
+                        logout();
+                        setIsProfileDropdownOpen(false);
+                      }}
+                    >
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          <button 
+          <button
             className="lg:hidden p-2 rounded-lg text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -195,47 +185,43 @@ const Header = () => {
         {isMobileMenuOpen && (
           <div className="lg:hidden py-4 border-t border-gray-200/50 bg-white/95 backdrop-blur-md">
             <nav className="flex flex-col space-y-4">
-              <Link 
-                to="/" 
-                className={`py-2 transition-colors duration-200 ${
-                  location.pathname === '/' 
-                    ? 'text-blue-500 font-semibold' 
+              <Link
+                to="/"
+                className={`py-2 transition-colors duration-200 ${location.pathname === '/'
+                    ? 'text-blue-500 font-semibold'
                     : 'text-gray-700 hover:text-blue-500 font-medium'
-                }`}
+                  }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Inicio
               </Link>
-              <Link 
-                to="/proyectos" 
-                className={`py-2 transition-colors duration-200 ${
-                  location.pathname === '/proyectos' 
-                    ? 'text-blue-500 font-semibold' 
+              <Link
+                to="/proyectos"
+                className={`py-2 transition-colors duration-200 ${location.pathname === '/proyectos'
+                    ? 'text-blue-500 font-semibold'
                     : 'text-gray-700 hover:text-blue-500 font-medium'
-                }`}
+                  }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Catálogo
               </Link>
-              <Link 
-                to="/simulador" 
-                className={`py-2 transition-colors duration-200 ${
-                  location.pathname === '/simulador' 
-                    ? 'text-blue-500 font-semibold' 
+              <Link
+                to="/simulador"
+                className={`py-2 transition-colors duration-200 ${location.pathname === '/simulador'
+                    ? 'text-blue-500 font-semibold'
                     : 'text-gray-700 hover:text-blue-500 font-medium'
-                }`}
+                  }`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Simular
               </Link>
               {isAuthenticated && (
-                <Link 
-                  to="/dashboard" 
-                  className={`py-2 transition-colors duration-200 ${
-                    location.pathname === '/dashboard' 
-                      ? 'text-blue-500 font-semibold' 
+                <Link
+                  to="/dashboard"
+                  className={`py-2 transition-colors duration-200 ${location.pathname === '/dashboard'
+                      ? 'text-blue-500 font-semibold'
                       : 'text-gray-700 hover:text-blue-500 font-medium'
-                  }`}
+                    }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Dashboard
@@ -244,7 +230,7 @@ const Header = () => {
               <div className="pt-4 border-t border-gray-200/50">
                 {!isAuthenticated ? (
                   <>
-                    <button 
+                    <button
                       onClick={() => {
                         openLoginModal();
                         setIsMobileMenuOpen(false);
@@ -253,7 +239,7 @@ const Header = () => {
                     >
                       Iniciar sesión
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         openRegisterModal();
                         setIsMobileMenuOpen(false);
@@ -268,7 +254,7 @@ const Header = () => {
                     <p className="text-sm text-gray-600 mb-3">
                       ¡Hola, {user?.name}!
                     </p>
-                    <button 
+                    <button
                       onClick={() => {
                         logout();
                         setIsMobileMenuOpen(false);

@@ -1,11 +1,10 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ProjectsService } from '../../service/projects.js';
+import { useFeaturedProjects } from '../../hooks/useFirebaseProjects';
 
 const ProjectsSection = () => {
   const navigate = useNavigate();
-
-  const projects = ProjectsService.featured(3);
+  const { projects, loading } = useFeaturedProjects(3);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('es-CO', {
@@ -41,7 +40,13 @@ const ProjectsSection = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-16">
-          {projects.map((project, index) => (
+          {loading ? (
+            <div className="col-span-3 text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+              <p className="text-gray-600">Cargando proyectos...</p>
+            </div>
+          ) : (
+            projects?.map((project, index) => (
             <div key={project.id} className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100/50 hover:border-blue-200 hover:-translate-y-2">
               <div className="relative h-64 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100 flex items-center justify-center">
@@ -104,7 +109,8 @@ const ProjectsSection = () => {
                 </Link>
               </div>
             </div>
-          ))}
+            ))
+          )}
         </div>
 
         <div className="text-center">

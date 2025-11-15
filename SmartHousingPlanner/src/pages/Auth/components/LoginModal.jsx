@@ -145,20 +145,6 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister }) => {
             </div>
           </div>
 
-          {/* Demo Button */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800 mb-2">
-              <strong>Demo:</strong> Usa estas credenciales para probar
-            </p>
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              Email: daniel@smarthousing.com | Contraseña: 123456
-            </button>
-          </div>
-
           {/* Submit Button */}
           <button
             type="submit"

@@ -16,7 +16,7 @@ const ContactForm = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
-  };
+  };                                                                                             
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,7 +42,7 @@ const ContactForm = () => {
   };
 
   return (
-    <div className="text-center mt-16 mb-16">
+    <div className="text-center mt-16">
       <div className="bg-gradient-to-r from-orange-100 to-blue-100 rounded-2xl p-8 max-w-4xl mx-auto">
         <h3 className="text-2xl font-bold text-gray-900 mb-4">¿Necesitas asesoría personalizada?</h3>
         <p className="text-gray-600 mb-6">

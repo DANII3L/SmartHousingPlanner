@@ -1,10 +1,53 @@
-import React from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSimulations } from '../../../hooks/useSimulations';
+import { useFirebaseSimulations } from '../../../hooks/useFirebaseSimulations';
+import PaymentComparisonModal from '../../../UI/components/PaymentComparisonModal';
+import { getProjectById } from '../../../services/firebase/projectsService';
+import { calculateEstimatedPayments } from '../../../utils/paymentCalculations';
 
 const MisSimulacionesPage = () => {
   const navigate = useNavigate();
-  const { simulations, deleteSimulation, clearAllSimulations } = useSimulations();
+  const { simulations, loading, deleteSimulation, clearAllSimulations, loadSimulations } = useFirebaseSimulations();
+  const [openPaymentModalId, setOpenPaymentModalId] = useState(null);
+  const [projectsMap, setProjectsMap] = useState({}); // Cache de proyectos por ID
+
+  useEffect(() => {
+    if (loadSimulations) {
+      loadSimulations();
+    }
+  }, [loadSimulations]);
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      const projectsToLoad = simulations
+        .filter(sim => sim.projectId && !projectsMap[sim.projectId])
+        .map(sim => sim.projectId);
+
+      if (projectsToLoad.length === 0) return;
+
+      const newProjectsMap = { ...projectsMap };
+      
+      await Promise.all(
+        projectsToLoad.map(async (projectId) => {
+          try {
+            const result = await getProjectById(projectId);
+            if (result.success && result.data) {
+              newProjectsMap[projectId] = result.data;
+            }
+          } catch (error) {
+            console.error(`Error al cargar proyecto ${projectId}:`, error);
+          }
+        })
+      );
+
+      setProjectsMap(newProjectsMap);
+    };
+
+    if (simulations.length > 0) {
+      loadProjects();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simulations]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', {
@@ -29,6 +72,41 @@ const MisSimulacionesPage = () => {
 
   const handleClearAllSimulations = () => {
     clearAllSimulations();
+  };
+
+  // Calcular pagos estimados para una simulación (usando función de utilidad)
+  const calculatePayments = (simulation) => {
+    if (!simulation) return [];
+    
+    // Obtener proyecto si está disponible
+    const project = projectsMap[simulation.projectId];
+    
+    // Usar la función de utilidad para calcular los pagos
+    return calculateEstimatedPayments(simulation, project);
+  };
+
+  // Obtener los pagos para el modal abierto
+  const currentPayments = useMemo(() => {
+    if (!openPaymentModalId) return [];
+    const simulation = simulations.find(sim => sim.id === openPaymentModalId);
+    if (!simulation) return [];
+    return calculatePayments(simulation);
+  }, [openPaymentModalId, simulations, projectsMap]);
+
+  // Obtener el proyecto del modal abierto
+  const currentProject = useMemo(() => {
+    if (!openPaymentModalId) return null;
+    const simulation = simulations.find(sim => sim.id === openPaymentModalId);
+    if (!simulation?.projectId) return null;
+    return projectsMap[simulation.projectId] || null;
+  }, [openPaymentModalId, simulations, projectsMap]);
+
+  const handleViewPayments = (simulationId) => {
+    setOpenPaymentModalId(simulationId);
+  };
+
+  const handleClosePaymentModal = () => {
+    setOpenPaymentModalId(null);
   };
 
   return (
@@ -80,7 +158,14 @@ const MisSimulacionesPage = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {simulations.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+              <p className="text-gray-600">Cargando simulaciones...</p>
+            </div>
+          </div>
+        ) : simulations.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,7 +282,7 @@ const MisSimulacionesPage = () => {
                     </div>
 
                     {/* Fechas */}
-                    <div className="border-t border-gray-200 pt-4">
+                    <div className="border-t border-gray-200 pt-4 mb-4">
                       <div className="flex justify-between text-sm text-gray-500">
                         <span>Creada: {formatDate(simulation.createdAt)}</span>
                         {simulation.updatedAt !== simulation.createdAt && (
@@ -205,6 +290,25 @@ const MisSimulacionesPage = () => {
                         )}
                       </div>
                     </div>
+
+                    {/* Botón Ver Gráficos */}
+                    <button
+                      onClick={() => handleViewPayments(simulation.id)}
+                      disabled={!simulation.calculation}
+                      className={`w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 ${
+                        simulation.calculation
+                          ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                      }`}
+                      title={!simulation.calculation ? 'No hay cálculo disponible' : 'Ver gráficos de pagos'}
+                    >
+                      <div className="flex items-center justify-center">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Ver Gráficos de Pagos
+                      </div>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -212,6 +316,19 @@ const MisSimulacionesPage = () => {
           </>
         )}
       </div>
+
+      {/* Modal de Gráficos de Pagos */}
+      {openPaymentModalId && (
+        <PaymentComparisonModal
+          isOpen={true}
+          onClose={handleClosePaymentModal}
+          title={currentProject ? `Pagos estimados para ${currentProject.name}` : `Pagos estimados para ${simulations.find(sim => sim.id === openPaymentModalId)?.projectName || 'Proyecto'}`}
+          subtitle="Revisa la proyección mensual calculada frente al pago objetivo sugerido para mantener el plan financiero al día."
+          data={currentPayments}
+          requiredLabel="Pago objetivo"
+          actualLabel="Pago estimado"
+        />
+      )}
     </div>
   );
 };

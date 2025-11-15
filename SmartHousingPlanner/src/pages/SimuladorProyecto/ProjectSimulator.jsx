@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useProjectSimulator } from './hooks/useProjectSimulator';
-import { useSimulations } from '../../hooks/useSimulations';
+import { useFirebaseSimulations } from '../../hooks/useFirebaseSimulations';
 
 const ProjectSimulator = ({ project, onClose }) => {
   const {
@@ -15,14 +15,36 @@ const ProjectSimulator = ({ project, onClose }) => {
     handleCheckboxChange
   } = useProjectSimulator(project);
   
-  const { saveSimulation, hasSimulation } = useSimulations();
+  const { saveSimulation: saveSim, simulations } = useFirebaseSimulations();
+  
+  // Derivar hasSimulation de la lista de simulaciones en lugar de estado separado
+  const hasSimulation = useMemo(() => {
+    if (!project?.id || !simulations) return false;
+    return simulations.some(sim => sim.projectId === project.id);
+  }, [project?.id, simulations]);
 
-  // Función para guardar la simulación
-  const handleSaveSimulation = () => {
+  // Función para guardar la simulación con validación
+  const handleSaveSimulation = async () => {
+    // Validar que hay cálculo disponible
     if (!calculation) {
       return;
     }
 
+    // Validar que hay un proyecto
+    if (!project?.id) {
+      return;
+    }
+
+    // Validar datos básicos de la simulación
+    if (!formData.projectValue || formData.projectValue <= 0) {
+      return;
+    }
+
+    if (formData.creditTerm <= 0 || formData.interestRate <= 0) {
+      return;
+    }
+
+    // Preparar datos de la simulación
     const simulationData = {
       projectId: project.id,
       projectName: project.name,
@@ -41,9 +63,17 @@ const ProjectSimulator = ({ project, onClose }) => {
       calculation: calculation
     };
 
-    const result = saveSimulation(simulationData);
-    if (result.success) {
-      onClose();
+    // Guardar simulación y validar respuesta
+    const result = await saveSim(simulationData);
+    
+    // Validar que se guardó correctamente
+    if (result.success && result.simulation) {
+      // Cerrar modal y pasar indicador de éxito
+      onClose(true);
+    } else {
+      // Si falló, no cerrar el modal para que el usuario pueda intentar de nuevo
+      // El hook ya muestra la notificación de error
+      console.error('Error al guardar simulación:', result.error);
     }
   };
 
@@ -62,7 +92,7 @@ const ProjectSimulator = ({ project, onClose }) => {
               </p>
             </div>
             <button
-              onClick={onClose}
+              onClick={() => onClose(false)}
               className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -352,7 +382,7 @@ const ProjectSimulator = ({ project, onClose }) => {
           {/* Botones de acción */}
           <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
             <button
-              onClick={onClose}
+              onClick={() => onClose(false)}
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors duration-200"
             >
               Cerrar
@@ -362,7 +392,7 @@ const ProjectSimulator = ({ project, onClose }) => {
               disabled={!calculation}
               className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl transition-colors duration-200"
             >
-              {hasSimulation(project.id) ? 'Actualizar Simulación' : 'Guardar Simulación'}
+              {hasSimulation ? 'Actualizar Simulación' : 'Guardar Simulación'}
             </button>
           </div>
         </div>

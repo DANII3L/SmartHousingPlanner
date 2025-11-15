@@ -1,12 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useFavorites } from '../../Proyectos/hooks/useFavorites';
+import { useFirebaseFavorites } from '../../../hooks/useFirebaseFavorites';
 import ProjectCard from '../../Proyectos/components/ProjectCard';
 import { useSweetAlert } from '../../../hooks/useSweetAlert';
 
 const FavoritosPage = () => {
   const navigate = useNavigate();
-  const { favorites, clearFavorites, removeFromFavorites } = useFavorites();
+  const { favorites, clearFavorites, removeFromFavorites } = useFirebaseFavorites();
   const { showConfirmation } = useSweetAlert();
 
   const handleClearFavorites = async () => {
@@ -108,14 +108,24 @@ const FavoritosPage = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {favorites.map((project) => (
-                <ProjectCard 
-                  key={project.id} 
-                  project={project} 
-                  cardStyle="default"
-                  onRemoveFavorite={() => removeFromFavorites(project.id)}
-                />
-              ))}
+              {favorites.map((favorite) => {
+                // Usar el proyecto completo si está cargado, o crear un objeto básico
+                const project = favorite.project || { id: favorite.projectId };
+                
+                // Si no hay proyecto cargado, no renderizar (o mostrar loading)
+                if (!favorite.project) {
+                  return null;
+                }
+                
+                return (
+                  <ProjectCard 
+                    key={favorite.id || favorite.projectId} 
+                    project={project} 
+                    cardStyle="default"
+                    onRemoveFavorite={() => removeFromFavorites(favorite.projectId)}
+                  />
+                );
+              }).filter(Boolean)}
             </div>
           </>
         )}

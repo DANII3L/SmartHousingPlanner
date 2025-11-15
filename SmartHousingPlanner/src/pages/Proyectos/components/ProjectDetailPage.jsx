@@ -1,69 +1,117 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProjectSimulator from '../../SimuladorProyecto/ProjectSimulator';
-import { ProjectsService } from '../../../service/projects.js';
+import { getProjectById } from '../../../services/firebase/projectsService';
 import PaymentComparisonModal from '../../../UI/components/PaymentComparisonModal.jsx';
+import { useFirebaseSimulations } from '../../../hooks/useFirebaseSimulations';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useSweetAlert } from '../../../hooks/useSweetAlert';
+import { calculateEstimatedPayments } from '../../../utils/paymentCalculations';
+import Swal from 'sweetalert2';
 
 const ProjectDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { getSimulationByProject, getSimulationByProjectFromFirebase, simulations, loadSimulations } = useFirebaseSimulations();
+  const { showNotification } = useSweetAlert();
   const [showSimulator, setShowSimulator] = useState(false);
   const [project, setProject] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPaymentsModalOpen, setIsPaymentsModalOpen] = useState(false);
+  const [simulation, setSimulation] = useState(null);
+  const [isLoadingSimulation, setIsLoadingSimulation] = useState(false);
 
+  // Obtener simulación para este proyecto (primero de la lista local, luego buscar en Firebase)
+  useEffect(() => {
+    const fetchSimulation = async () => {
+      if (!user?.id || !project?.id) {
+        setSimulation(null);
+        return;
+      }
+
+      // Primero intentar buscar en la lista local
+      const localSim = getSimulationByProject(project.id);
+      if (localSim) {
+        setSimulation(localSim);
+        return;
+      }
+
+      // Si no está en la lista local, buscar directamente en Firebase
+      setIsLoadingSimulation(true);
+      try {
+        const firebaseSim = await getSimulationByProjectFromFirebase(project.id);
+        setSimulation(firebaseSim);
+      } catch (error) {
+        console.error('Error al buscar simulación:', error);
+        setSimulation(null);
+      } finally {
+        setIsLoadingSimulation(false);
+      }
+    };
+
+    fetchSimulation();
+  }, [user?.id, project?.id, simulations, getSimulationByProject, getSimulationByProjectFromFirebase]);
+
+  // Verificar si tiene simulación guardada para este proyecto
+  const hasSimulation = useMemo(() => {
+    // Si no hay usuario autenticado, no puede tener simulación
+    if (!user?.id || !project?.id) return false;
+    
+    // Verificar si hay simulación encontrada
+    return simulation !== null && simulation !== undefined;
+  }, [user?.id, project?.id, simulation]);
+
+  // Calcular pagos estimados basados en la simulación (desde fecha de creación hasta fecha de entrega)
   const upcomingPayments = useMemo(() => {
-    if (!project) return [];
+    if (!project || !simulation) return [];
+    
+    // Usar la función de utilidad para calcular los pagos
+    return calculateEstimatedPayments(simulation, project);
+  }, [project, simulation]);
 
-    const baseSource = project.priceFrom ?? project.price ?? 280000000;
-    const baseRequired = Math.round((baseSource * 0.3) / 24);
-    const baseEstimated = baseRequired - Math.round(baseRequired * 0.04);
-    const currentYear = new Date().getFullYear();
-    const periods = [
-      { label: 'Dic', year: currentYear },
-      { label: 'Ene', year: currentYear + 1 },
-      { label: 'Feb', year: currentYear + 1 },
-      { label: 'Mar', year: currentYear + 1 },
-      { label: 'Abr', year: currentYear + 1 },
-      { label: 'May', year: currentYear + 1 },
-      { label: 'Jun', year: currentYear + 1 },
-      { label: 'Jul', year: currentYear + 1 },
-      { label: 'Ago', year: currentYear + 1 },
-      { label: 'Sep', year: currentYear + 1 },
-      { label: 'Oct', year: currentYear + 1 },
-      { label: 'Nov', year: currentYear + 1 },
-      { label: 'Dic', year: currentYear + 1 },
-      { label: 'Ene', year: currentYear + 2 },
-      { label: 'Feb', year: currentYear + 2 },
-      { label: 'Mar', year: currentYear + 2 },
-      { label: 'Abr', year: currentYear + 2 },
-      { label: 'May', year: currentYear + 2 },
-      { label: 'Jun', year: currentYear + 2 },
-      { label: 'Jul', year: currentYear + 2 },
-      { label: 'Ago', year: currentYear + 2 },
-      { label: 'Sep', year: currentYear + 2 },
-    ];
+  // Manejar click en botón de pagos
+  const handleViewPayments = async () => {
+    if (!user) {
+      showNotification('error', 'Error', 'Debes iniciar sesión para ver los pagos estimados');
+      return;
+    }
 
-    return periods.map((period, index) => {
-      const required = baseRequired + index * 45000;
-      const estimated = baseEstimated + index * 38000;
-      return {
-        label: period.label,
-        year: period.year,
-        required,
-        actual: estimated,
-      };
-    });
-  }, [project]);
+    if (!hasSimulation) {
+      const result = await Swal.fire({
+        title: 'Simulación requerida',
+        text: 'Debes realizar una simulación de financiamiento antes de ver los pagos estimados. ¿Deseas crear una simulación ahora?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Sí, crear simulación',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true
+      });
 
+      if (result.isConfirmed) {
+        setShowSimulator(true);
+      }
+      return;
+    }
+
+    setIsPaymentsModalOpen(true);
+  };
+
+  // Cargar proyecto al entrar a la página
   useEffect(() => {
     let isMounted = true;
 
     const fetchProject = async () => {
       setIsLoading(true);
-      const projectData = await ProjectsService.detail(id);
+      const result = await getProjectById(id);
       if (isMounted) {
-        setProject(projectData);
+        if (result.success) {
+          setProject(result.data);
+        } else {
+          setProject(null);
+        }
         setIsLoading(false);
       }
     };
@@ -74,6 +122,14 @@ const ProjectDetailPage = () => {
       isMounted = false;
     };
   }, [id]);
+
+  // Cargar simulaciones cuando el usuario está autenticado (pero la simulación específica ya se busca en el otro useEffect)
+  useEffect(() => {
+    if (user?.id && loadSimulations) {
+      // Cargar todas las simulaciones del usuario para tenerlas en caché
+      loadSimulations();
+    }
+  }, [user?.id, loadSimulations]);
 
   if (!project) {
     if (isLoading) {
@@ -127,6 +183,20 @@ const ProjectDetailPage = () => {
             </button>
           </div>
           
+          {/* Imagen principal del proyecto */}
+          {project.image && (
+            <div className="mb-8 rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src={project.image}
+                alt={project.name}
+                className="w-full h-[500px] object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
+
           <div className="grid lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-2">
               <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -179,14 +249,30 @@ const ProjectDetailPage = () => {
                     onClick={() => setShowSimulator(true)}
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
-                    Simular Financiamiento
+                    {hasSimulation ? 'Actualizar Simulación' : 'Simular Financiamiento'}
                   </button>
                   <button 
-                    onClick={() => setIsPaymentsModalOpen(true)}
-                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-6 rounded-xl transition-all duration-200"
+                    onClick={handleViewPayments}
+                    disabled={!hasSimulation || !user}
+                    className={`w-full font-semibold py-4 px-6 rounded-xl transition-all duration-200 ${
+                      hasSimulation && user
+                        ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                    }`}
+                    title={!user ? 'Debes iniciar sesión' : !hasSimulation ? 'Debes crear una simulación primero' : 'Ver gráficos de pagos'}
                   >
-                    Ver Gráficos de Pagos
+                    <div className="flex items-center justify-center">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      Ver Gráficos de Pagos
+                    </div>
                   </button>
+                  {!hasSimulation && user && (
+                    <p className="text-xs text-gray-500 text-center mt-2">
+                      Crea una simulación para ver los pagos estimados
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -198,7 +284,23 @@ const ProjectDetailPage = () => {
       {showSimulator && (
         <ProjectSimulator 
           project={project} 
-          onClose={() => setShowSimulator(false)} 
+          onClose={async (simulationSaved = false) => {
+            setShowSimulator(false);
+            
+            // Si se guardó exitosamente, recargar simulaciones para actualizar el estado
+            if (simulationSaved) {
+              if (loadSimulations) {
+                await loadSimulations();
+              }
+              
+              // Mostrar mensaje de confirmación
+              showNotification(
+                'success', 
+                'Simulación guardada', 
+                'La simulación se ha guardado correctamente. Ahora puedes ver los gráficos de pagos.'
+              );
+            }
+          }} 
         />
       )}
       <PaymentComparisonModal
