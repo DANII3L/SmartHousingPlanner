@@ -63,7 +63,6 @@ export const loginUser = async (email, password) => {
         updatedAt: new Date().toISOString(),
       };
       
-      // Crear el documento en Firestore
       await setDoc(userRef, userData);
     }
 
@@ -98,40 +97,29 @@ export const updateUserProfile = async (userId, updatedData) => {
       return { success: false, error: 'Usuario no autenticado' };
     }
 
-    // Verificar si el email ha cambiado
     const emailChanged = updatedData.email && updatedData.email !== currentUser.email;
     let emailUpdateWarning = null;
 
-    // Actualizar email en Firebase Authentication si ha cambiado
     if (emailChanged) {
       try {
         await updateEmail(currentUser, updatedData.email);
       } catch (emailError) {
-        // Manejar errores específicos de actualización de email
         if (emailError.code === 'auth/requires-recent-login') {
-          // Si requiere reautenticación reciente, continuar pero guardar el email en Firestore
-          // y mostrar advertencia al usuario
           emailUpdateWarning = 'El email se guardó en tu perfil. Para que el cambio sea efectivo en la autenticación, necesitas cerrar sesión y volver a iniciar sesión.';
         } else if (emailError.code === 'auth/email-already-in-use') {
-          // Si el email ya está en uso, no actualizar nada
           return { success: false, error: 'Este email ya está en uso por otra cuenta' };
         } else if (emailError.code === 'auth/invalid-email') {
-          // Si el email no es válido, no actualizar nada
           return { success: false, error: 'El email proporcionado no es válido' };
         } else {
-          // Otro error, continuar con la actualización de Firestore pero mostrar advertencia
-          console.warn('Error al actualizar email en Authentication:', emailError);
           emailUpdateWarning = 'El email se guardó en tu perfil, pero hubo un problema al actualizarlo en la autenticación. Puedes intentar cerrar sesión y volver a iniciar sesión.';
         }
       }
     }
 
-    // Verificar si el documento existe en Firestore
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {
-      // Si no existe, crear el documento con los datos básicos del usuario
       const newUserData = {
         id: userId,
         name: updatedData.name || currentUser.displayName || currentUser.email || 'Usuario',
@@ -145,22 +133,18 @@ export const updateUserProfile = async (userId, updatedData) => {
       
       await setDoc(userRef, newUserData);
     } else {
-      // Si existe, actualizar el documento
       await updateDoc(userRef, {
         ...updatedData,
         updatedAt: new Date().toISOString(),
       });
     }
 
-    // Actualizar nombre en Firebase Authentication si ha cambiado
     if (updatedData.name && updatedData.name !== currentUser.displayName) {
       await updateProfile(currentUser, { displayName: updatedData.name });
     }
 
-    // Obtener el documento actualizado
     const updatedUserDoc = await getDoc(userRef);
     
-    // Retornar éxito con advertencia si hubo problema con el email
     const result = { success: true, user: updatedUserDoc.data() };
     if (emailUpdateWarning) {
       result.warning = emailUpdateWarning;
@@ -168,11 +152,7 @@ export const updateUserProfile = async (userId, updatedData) => {
     
     return result;
   } catch (error) {
-    console.error('Error al actualizar perfil:', error);
-    
-    // Manejar error específico de documento no encontrado
     if (error.code === 'not-found' || error.message?.includes('No document to update')) {
-      // Intentar crear el documento si no existe
       try {
         const currentUser = auth.currentUser;
         if (currentUser) {

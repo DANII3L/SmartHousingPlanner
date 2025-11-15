@@ -21,7 +21,6 @@ export const findUserByDocument = async (documentNumber) => {
     const docSnap = snapshot.docs[0];
     return { success: true, data: { id: docSnap.id, ...docSnap.data() } };
   } catch (error) {
-    console.error('Error al buscar usuario por documento:', error);
     return { success: false, error: 'Error al buscar usuario' };
   }
 };

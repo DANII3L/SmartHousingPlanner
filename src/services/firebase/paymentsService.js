@@ -41,7 +41,6 @@ export const getUserPayments = async (userId) => {
     const enriched = await enrichAssociationsWithHistory(associations);
     return { success: true, data: enriched };
   } catch (error) {
-    console.error('Error al obtener pagos del usuario:', error);
     return { success: false, error: 'Error al obtener pagos' };
   }
 };
@@ -54,7 +53,6 @@ export const getAllPayments = async () => {
     const enriched = await enrichAssociationsWithHistory(associations);
     return { success: true, data: enriched };
   } catch (error) {
-    console.error('Error al obtener todos los pagos:', error);
     return { success: false, error: 'Error al obtener pagos' };
   }
 };
@@ -73,7 +71,6 @@ export const getPaymentById = async (associationId) => {
       data: { ...association, paymentHistory: historyResult.data || [] },
     };
   } catch (error) {
-    console.error('Error al obtener pagos por asociación:', error);
     return { success: false, error: 'Error al obtener información de pagos' };
   }
 };
@@ -89,8 +86,7 @@ export const addPaymentHistory = async (associationId, historyData) => {
     };
     const docRef = await addDoc(paymentsRef, payload);
     return { success: true, id: docRef.id };
-  } catch (error) {
-    console.error('Error al guardar pago:', error);
+  } catch (error) { 
     return { success: false, error: 'Error al guardar pago' };
   }
 };
@@ -108,7 +104,6 @@ export const getPaymentHistory = async (associationId) => {
       });
     return { success: true, data: history };
   } catch (error) {
-    console.error('Error al obtener historial de pagos:', error);
     return { success: false, error: 'Error al obtener historial de pagos' };
   }
 };
@@ -122,7 +117,6 @@ export const updatePaymentHistoryEntry = async (paymentId, historyData) => {
     });
     return { success: true };
   } catch (error) {
-    console.error('Error al actualizar pago:', error);
     return { success: false, error: 'Error al actualizar pago' };
   }
 };
@@ -133,7 +127,6 @@ export const deletePaymentHistoryEntry = async (paymentId) => {
     await deleteDoc(paymentRef);
     return { success: true };
   } catch (error) {
-    console.error('Error al eliminar pago:', error);
     return { success: false, error: 'Error al eliminar pago' };
   }
 };
@@ -148,12 +141,10 @@ export const deletePayment = async (associationId) => {
     await deleteDoc(associationRef);
     return { success: true };
   } catch (error) {
-    console.error('Error al eliminar asociación y pagos:', error);
     return { success: false, error: 'Error al eliminar asociación y pagos' };
   }
 };
 
-// Obtener resumen financiero del usuario
 export const getUserFinancialSummary = async (userId) => {
   try {
     const payments = await getUserPayments(userId);
@@ -175,14 +166,12 @@ export const getUserFinancialSummary = async (userId) => {
       summary.totalValue += payment.price || 0;
       summary.totalSubsidies += payment.subsidy || 0;
       
-      // Calcular total pagado del historial
       const totalPaidInHistory = payment.paymentHistory?.reduce(
         (acc, hist) => acc + (hist.actual || 0),
         0
       ) || 0;
       summary.totalPaid += totalPaidInHistory;
       
-      // Encontrar próximo pago
       if (!summary.nextPayment || payment.monthlyPayment) {
         summary.nextPayment = {
           amount: payment.monthlyPayment,
@@ -196,7 +185,6 @@ export const getUserFinancialSummary = async (userId) => {
     
     return { success: true, data: summary };
   } catch (error) {
-    console.error('Error al obtener resumen financiero:', error);
     return { success: false, error: 'Error al obtener resumen financiero' };
   }
 };

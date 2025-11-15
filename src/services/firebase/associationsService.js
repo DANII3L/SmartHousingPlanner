@@ -26,7 +26,6 @@ export const getAllAssociations = async () => {
     const snapshot = await getDocs(q);
     return { success: true, data: mapSnapshot(snapshot) };
   } catch (error) {
-    console.error('Error al obtener asociaciones:', error);
     return { success: false, error: 'Error al obtener asociaciones' };
   }
 };
@@ -42,7 +41,6 @@ export const getAssociationsByUser = async (userId) => {
     const snapshot = await getDocs(q);
     return { success: true, data: mapSnapshot(snapshot) };
   } catch (error) {
-    console.error('Error al obtener asociaciones del usuario:', error);
     return { success: false, error: 'Error al obtener asociaciones del usuario' };
   }
 };
@@ -58,7 +56,6 @@ export const getAssociationsByProject = async (projectId) => {
     const snapshot = await getDocs(q);
     return { success: true, data: mapSnapshot(snapshot) };
   } catch (error) {
-    console.error('Error al obtener asociaciones del proyecto:', error);
     return { success: false, error: 'Error al obtener asociaciones del proyecto' };
   }
 };
@@ -72,7 +69,6 @@ export const getAssociationById = async (associationId) => {
     }
     return { success: true, data: { id: snapshot.id, ...snapshot.data() } };
   } catch (error) {
-    console.error('Error al obtener la asociación:', error);
     return { success: false, error: 'Error al obtener la asociación' };
   }
 };
@@ -92,7 +88,6 @@ export const findAssociationByUserAndProject = async (userId, projectId) => {
     const [document] = mapSnapshot(snapshot);
     return { success: true, data: document };
   } catch (error) {
-    console.error('Error al validar asociación existente:', error);
     return { success: false, error: 'Error al validar asociación existente' };
   }
 };
@@ -108,7 +103,6 @@ export const createAssociation = async (associationData) => {
     const docRef = await addDoc(associationsRef, payload);
     return { success: true, id: docRef.id };
   } catch (error) {
-    console.error('Error al crear asociación:', error);
     return { success: false, error: 'Error al crear asociación' };
   }
 };
@@ -119,7 +113,6 @@ export const deleteAssociation = async (associationId) => {
     await deleteDoc(associationRef);
     return { success: true };
   } catch (error) {
-    console.error('Error al eliminar asociación:', error);
     return { success: false, error: 'Error al eliminar asociación' };
   }
 };
