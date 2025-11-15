@@ -10,9 +10,11 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  documentId,
 } from 'firebase/firestore';
 import { auth, db } from '../../config/firebase';
 import { getCurrentUser } from './authService';
+import { mapSnapshot, sortByTimestamp, chunkArray } from './utils';
 
 const PROJECTS_COLLECTION = 'projects';
 
@@ -21,13 +23,7 @@ export const getAllProjects = async () => {
     const projectsRef = collection(db, PROJECTS_COLLECTION);
     const q = query(projectsRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
-    
-    const projects = [];
-    querySnapshot.forEach((doc) => {
-      projects.push({ id: doc.id, ...doc.data() });
-    });
-    
-    return { success: true, data: projects };
+    return { success: true, data: mapSnapshot(querySnapshot) };
   } catch (error) {
     return { success: false, error: 'Error al obtener proyectos' };
   }
@@ -60,12 +56,7 @@ export const getFeaturedProjects = async (count = 3) => {
     );
     const querySnapshot = await getDocs(q);
     
-    const projects = [];
-    querySnapshot.forEach((doc) => {
-      projects.push({ id: doc.id, ...doc.data() });
-    });
-    
-    return { success: true, data: projects };
+    return { success: true, data: mapSnapshot(querySnapshot) };
   } catch (error) {
     return { success: false, error: 'Error al obtener proyectos destacados' };
   }
@@ -81,17 +72,12 @@ export const searchProjects = async (searchTerm) => {
     );
     const querySnapshot = await getDocs(q);
     
-    const projects = [];
-    querySnapshot.forEach((doc) => {
-      const projectData = doc.data();
-      const searchLower = searchTerm.toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    const projects = mapSnapshot(querySnapshot).filter((projectData) => {
       const matchesName = projectData.name?.toLowerCase().includes(searchLower);
       const matchesLocation = projectData.location?.toLowerCase().includes(searchLower);
       const matchesDescription = projectData.description?.toLowerCase().includes(searchLower);
-      
-      if (matchesName || matchesLocation || matchesDescription) {
-        projects.push({ id: doc.id, ...projectData });
-      }
+      return matchesName || matchesLocation || matchesDescription;
     });
     
     return { success: true, data: projects };
@@ -110,12 +96,7 @@ export const getProjectsByStatus = async (status) => {
     );
     const querySnapshot = await getDocs(q);
     
-    const projects = [];
-    querySnapshot.forEach((doc) => {
-      projects.push({ id: doc.id, ...doc.data() });
-    });
-    
-    return { success: true, data: projects };
+    return { success: true, data: mapSnapshot(querySnapshot) };
   } catch (error) {
     return { success: false, error: 'Error al obtener proyectos' };
   }
@@ -183,6 +164,25 @@ export const deleteProject = async (projectId) => {
     return { success: true };
   } catch (error) {
     return { success: false, error: 'Error al eliminar proyecto' };
+  }
+};
+
+export const getProjectsByIds = async (projectIds = []) => {
+  try {
+    if (!Array.isArray(projectIds) || projectIds.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    const chunks = chunkArray([...new Set(projectIds)], 10);
+    const projectsRef = collection(db, PROJECTS_COLLECTION);
+    const snapshots = await Promise.all(
+      chunks.map((chunk) => getDocs(query(projectsRef, where(documentId(), 'in', chunk)))),
+    );
+
+    const projects = snapshots.flatMap((snapshot) => mapSnapshot(snapshot));
+    return { success: true, data: sortByTimestamp(projects) };
+  } catch (error) {
+    return { success: false, error: 'Error al cargar proyectos solicitados' };
   }
 };
 

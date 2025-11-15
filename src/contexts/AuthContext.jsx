@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { useSweetAlert } from '../hooks/useSweetAlert';
 import {
   registerUser,
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       const result = await loginUser(email, password);
       if (result.success) {
@@ -55,12 +55,45 @@ export const AuthProvider = ({ children }) => {
       showNotification('error', 'Error de autenticación', 'Ocurrió un error al iniciar sesión');
       return { success: false, error: 'Error al iniciar sesión' };
     }
-  };
+  }, [showNotification]);
 
-  const register = async ({ name, email, password, confirmPassword }) => {
+  const register = useCallback(async (formValues) => {
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      document,
+      documentType,
+      birthDate,
+      monthlyIncome,
+      password,
+      confirmPassword,
+    } = formValues;
+
     if (password !== confirmPassword) {
       showNotification('error', 'Error de registro', 'Las contraseñas no coinciden');
       return { success: false, error: 'Las contraseñas no coinciden' };
+    }
+
+    if (!firstName?.trim() || !lastName?.trim()) {
+      showNotification('error', 'Error de registro', 'Nombre y apellido son obligatorios');
+      return { success: false, error: 'Nombre y apellido son obligatorios' };
+    }
+
+    if (!phone?.trim() || !document?.trim() || !birthDate) {
+      showNotification('error', 'Error de registro', 'Completa todos los campos obligatorios');
+      return { success: false, error: 'Campos obligatorios faltantes' };
+    }
+
+    if (!monthlyIncome || Number(monthlyIncome) <= 0) {
+      showNotification('error', 'Error de registro', 'Ingresa un valor válido para tus ingresos');
+      return { success: false, error: 'Ingresos inválidos' };
+    }
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      showNotification('error', 'Error de registro', 'El email no es válido');
+      return { success: false, error: 'Email inválido' };
     }
 
     if (password.length < 6) {
@@ -68,11 +101,22 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: 'Contraseña muy corta' };
     }
 
+    const payload = {
+      name: `${firstName} ${lastName}`.trim(),
+      email,
+      password,
+      phone,
+      document,
+      documentType: documentType || 'CC',
+      birthDate,
+      monthlyIncome: Number(monthlyIncome) || 0,
+    };
+
     try {
-      const result = await registerUser({ name, email, password });
+      const result = await registerUser(payload);
       if (result.success) {
         setUser(result.user);
-        showNotification('success', '¡Registro exitoso!', `Bienvenido ${name}, tu cuenta ha sido creada`);
+        showNotification('success', '¡Registro exitoso!', `Bienvenido ${firstName}, tu cuenta ha sido creada`);
         return { success: true, user: result.user };
       } else {
         showNotification('error', 'Error de registro', result.error || 'Error al registrar usuario');
@@ -82,9 +126,9 @@ export const AuthProvider = ({ children }) => {
       showNotification('error', 'Error de registro', 'Ocurrió un error al registrar usuario');
       return { success: false, error: 'Error al registrar usuario' };
     }
-  };
+  }, [showNotification]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       const result = await logoutUser();
       if (result.success) {
@@ -96,9 +140,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       showNotification('error', 'Error', 'Error al cerrar sesión');
     }
-  };
+  }, [showNotification]);
 
-  const updateProfile = async (updatedData) => {
+  const updateProfile = useCallback(async (updatedData) => {
     if (!user?.id) {
       return { success: false, error: 'Usuario no autenticado' };
     }
@@ -125,7 +169,7 @@ export const AuthProvider = ({ children }) => {
       showNotification('error', 'Error', 'Error al actualizar perfil');
       return { success: false, error: 'Error al actualizar perfil' };
     }
-  };
+  }, [showNotification, user?.id]);
 
   const value = useMemo(
     () => ({
@@ -139,7 +183,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       updateProfile,
     }),
-    [user, loading, isAdmin, hasRole],
+    [user, loading, isAdmin, hasRole, login, register, logout, updateProfile],
   );
 
   if (loading) {

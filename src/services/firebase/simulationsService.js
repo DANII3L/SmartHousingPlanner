@@ -39,14 +39,11 @@ export const getUserSimulations = async (userId) => {
       simulations.push({ id: doc.id, ...data });
     });
     
-    // Ordenar manualmente si no se pudo ordenar en la consulta
     simulations.sort((a, b) => {
       const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
       const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
       return dateB - dateA; // Más recientes primero
     });
-    
-    console.log(`Simulaciones encontradas para userId ${userId}:`, simulations.length);
     return { success: true, data: simulations };
   } catch (error) {
     console.error('Error al obtener simulaciones:', error);

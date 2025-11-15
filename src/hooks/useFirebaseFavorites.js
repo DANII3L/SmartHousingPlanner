@@ -7,7 +7,7 @@ import {
   isFavorite,
   clearUserFavorites,
 } from '../services/firebase/favoritesService';
-import { getProjectById } from '../services/firebase/projectsService';
+import { getProjectsByIds } from '../services/firebase/projectsService';
 import { useSweetAlert } from './useSweetAlert';
 
 const initialState = {
@@ -43,34 +43,27 @@ export const useFirebaseFavorites = () => {
   const [state, dispatch] = useReducer(favoritesReducer, initialState);
   const { showNotification } = useSweetAlert();
 
-  const loadProjectsForFavorites = useCallback(async (favoritesIds) => {
-    if (!favoritesIds || favoritesIds.length === 0) {
-      setProjectsMap({});
+  const loadProjectsForFavorites = useCallback(async (favoritesList) => {
+    if (!favoritesList || favoritesList.length === 0) {
+      dispatch({ type: 'SET_PROJECTS_MAP', payload: {} });
       return;
     }
 
     try {
-      const projectPromises = favoritesIds.map(async (favorite) => {
-        try {
-          const result = await getProjectById(favorite.projectId);
-          if (result.success && result.data) {
-            return { projectId: favorite.projectId, project: result.data, favoriteId: favorite.id };
-          }
-          return null;
-        } catch (error) {
-          console.error(`Error al cargar proyecto ${favorite.projectId}:`, error);
-          return null;
-        }
-      });
+      const ids = favoritesList.map((favorite) => favorite.projectId);
+      const result = await getProjectsByIds(ids);
+      if (!result.success) {
+        console.error(result.error);
+        return;
+      }
 
-      const projectsResults = await Promise.all(projectPromises);
-      
       const newProjectsMap = {};
-      projectsResults.forEach((result) => {
-        if (result && result.project) {
-          newProjectsMap[result.projectId] = {
-            ...result.project,
-            favoriteId: result.favoriteId,
+      favoritesList.forEach((favorite) => {
+        const projectData = result.data.find((project) => project.id === favorite.projectId);
+        if (projectData) {
+          newProjectsMap[favorite.projectId] = {
+            ...projectData,
+            favoriteId: favorite.id,
           };
         }
       });

@@ -5,20 +5,17 @@ import {
   doc,
   getDoc,
   getDocs,
-  orderBy,
   query,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { getAllAssociations, getAssociationsByUser } from './associationsService';
+import { mapSnapshot, sortByTimestamp } from './utils';
 
 const PAYMENTS_COLLECTION = 'payments';
 const ASSOCIATIONS_COLLECTION = 'associations';
-const mapWithId = (snapshot) =>
-  snapshot.docs.map((docSnap) => ({
-    id: docSnap.id,
-    ...docSnap.data(),
-  }));
 
 const enrichAssociationsWithHistory = async (associations) => {
   const enriched = await Promise.all(
@@ -33,11 +30,15 @@ const enrichAssociationsWithHistory = async (associations) => {
 
 export const getUserPayments = async (userId) => {
   try {
-    const associationsRef = collection(db, ASSOCIATIONS_COLLECTION);
-    const snapshot = await getDocs(
-      query(associationsRef, where('userId', '==', userId), orderBy('createdAt', 'desc')),
-    );
-    const associations = mapWithId(snapshot);
+    if (!userId) {
+      return { success: true, data: [] };
+    }
+
+    const associationsResult = await getAssociationsByUser(userId);
+    if (!associationsResult.success) {
+      return { success: false, error: associationsResult.error || 'Error al obtener asociaciones del usuario' };
+    }
+    const associations = sortByTimestamp(associationsResult.data ?? []);
     const enriched = await enrichAssociationsWithHistory(associations);
     return { success: true, data: enriched };
   } catch (error) {
@@ -47,9 +48,11 @@ export const getUserPayments = async (userId) => {
 
 export const getAllPayments = async () => {
   try {
-    const associationsRef = collection(db, ASSOCIATIONS_COLLECTION);
-    const snapshot = await getDocs(query(associationsRef, orderBy('createdAt', 'desc')));
-    const associations = mapWithId(snapshot);
+    const associationsResult = await getAllAssociations();
+    if (!associationsResult.success) {
+      return { success: false, error: associationsResult.error || 'Error al obtener asociaciones' };
+    }
+    const associations = sortByTimestamp(associationsResult.data ?? []);
     const enriched = await enrichAssociationsWithHistory(associations);
     return { success: true, data: enriched };
   } catch (error) {
@@ -95,13 +98,7 @@ export const getPaymentHistory = async (associationId) => {
   try {
     const paymentsRef = collection(db, PAYMENTS_COLLECTION);
     const snapshot = await getDocs(query(paymentsRef, where('associationId', '==', associationId)));
-    const history = snapshot.docs
-      .map((document) => ({ id: document.id, ...document.data() }))
-      .sort((a, b) => {
-        const dateA = new Date(a.date || a.createdAt || 0).getTime();
-        const dateB = new Date(b.date || b.createdAt || 0).getTime();
-        return dateB - dateA;
-      });
+    const history = sortByTimestamp(mapSnapshot(snapshot), ['date', 'createdAt']);
     return { success: true, data: history };
   } catch (error) {
     return { success: false, error: 'Error al obtener historial de pagos' };
@@ -135,10 +132,11 @@ export const deletePayment = async (associationId) => {
   try {
     const paymentsRef = collection(db, PAYMENTS_COLLECTION);
     const snapshot = await getDocs(query(paymentsRef, where('associationId', '==', associationId)));
-    const deletions = snapshot.docs.map((docSnap) => deleteDoc(docSnap.ref));
-    await Promise.all(deletions);
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((docSnap) => batch.delete(docSnap.ref));
     const associationRef = doc(db, ASSOCIATIONS_COLLECTION, associationId);
-    await deleteDoc(associationRef);
+    batch.delete(associationRef);
+    await batch.commit();
     return { success: true };
   } catch (error) {
     return { success: false, error: 'Error al eliminar asociación y pagos' };

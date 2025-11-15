@@ -6,13 +6,12 @@ import {
   addPaymentHistory,
   deletePayment,
   getUserFinancialSummary,
-  getAllPayments,
   updatePaymentHistoryEntry,
   deletePaymentHistoryEntry,
 } from '../services/firebase/paymentsService';
 
 export const useFirebasePayments = () => {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,7 +23,7 @@ export const useFirebasePayments = () => {
     }
 
     try {
-      const result = isAdmin ? await getAllPayments() : await getUserPayments(user.id);
+      const result = await getUserPayments(user.id);
       if (result.success) {
         setPayments(result.data);
         setError(null);
@@ -34,7 +33,7 @@ export const useFirebasePayments = () => {
     } catch (err) {
       setError('Error al cargar pagos');
     }
-  }, [user?.id, isAdmin]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) {

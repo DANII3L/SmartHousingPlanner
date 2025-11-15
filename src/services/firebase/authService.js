@@ -9,7 +9,16 @@ import {
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../../config/firebase';
 
-export const registerUser = async ({ name, email, password }) => {
+export const registerUser = async ({
+  name,
+  email,
+  password,
+  phone = '',
+  document = '',
+  documentType = 'CC',
+  birthDate = '',
+  monthlyIncome = 0,
+}) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -21,6 +30,11 @@ export const registerUser = async ({ name, email, password }) => {
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=ffffff&size=150`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      phone,
+      document,
+      documentType,
+      birthDate,
+      monthlyIncome: Number(monthlyIncome) || 0,
     };
 
     await updateProfile(user, { displayName: name });

@@ -170,7 +170,7 @@ export const useFirebaseSimulations = () => {
     } catch (error) {
       showNotification('error', 'Error', 'Error al eliminar simulaciones');
     }
-  }, [user?.id, simulations.length, showConfirmation, showNotification]);
+  }, [user?.id, simulations, showConfirmation, showNotification]);
 
   return {
     simulations,

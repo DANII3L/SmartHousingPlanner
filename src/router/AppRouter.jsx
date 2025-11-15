@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout.jsx';
 import ProtectedRoute from '../UI/components/ProtectedRoute.jsx';
+import RouteError from './RouteError.jsx';
 
 const HomePage = lazy(() => import('../pages/Home/HomePage.jsx'));
 const ProjectsPage = lazy(() => import('../pages/Proyectos/components/ProjectsPage.jsx'));
@@ -16,12 +17,14 @@ const AdminPaymentsPage = lazy(() => import('../pages/Admin/Payments/AdminPaymen
 const router = createBrowserRouter([
   {
     element: <MainLayout />,
+    errorElement: <RouteError />,
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/proyectos', element: <ProjectsPage /> },
       { path: '/proyectos/:id/simulador', element: <ProjectDetailPage /> },
       {
         element: <ProtectedRoute />,
+        errorElement: <RouteError />,
         children: [
           { path: '/dashboard', element: <DashboardPage /> },
           { path: '/user-info', element: <UserInfoPage /> },
@@ -32,6 +35,7 @@ const router = createBrowserRouter([
       },
       {
         element: <ProtectedRoute roles={['admin']} />,
+        errorElement: <RouteError />,
         children: [{ path: '/pagos-proyectos', element: <AdminPaymentsPage /> }],
       },
       { path: '*', element: <Navigate to="/" replace /> },

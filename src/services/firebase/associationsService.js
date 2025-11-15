@@ -7,24 +7,17 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { mapSnapshot, sortByTimestamp } from './utils';
 
 const ASSOCIATIONS_COLLECTION = 'associations';
-
-const mapSnapshot = (snapshot) =>
-  snapshot.docs.map((document) => ({
-    id: document.id,
-    ...document.data(),
-  }));
 
 export const getAllAssociations = async () => {
   try {
     const associationsRef = collection(db, ASSOCIATIONS_COLLECTION);
-    const q = query(associationsRef, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    return { success: true, data: mapSnapshot(snapshot) };
+    const snapshot = await getDocs(associationsRef);
+    return { success: true, data: sortByTimestamp(mapSnapshot(snapshot)) };
   } catch (error) {
     return { success: false, error: 'Error al obtener asociaciones' };
   }
@@ -33,13 +26,9 @@ export const getAllAssociations = async () => {
 export const getAssociationsByUser = async (userId) => {
   try {
     const associationsRef = collection(db, ASSOCIATIONS_COLLECTION);
-    const q = query(
-      associationsRef,
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc'),
-    );
+    const q = query(associationsRef, where('userId', '==', userId));
     const snapshot = await getDocs(q);
-    return { success: true, data: mapSnapshot(snapshot) };
+    return { success: true, data: sortByTimestamp(mapSnapshot(snapshot)) };
   } catch (error) {
     return { success: false, error: 'Error al obtener asociaciones del usuario' };
   }
@@ -48,13 +37,9 @@ export const getAssociationsByUser = async (userId) => {
 export const getAssociationsByProject = async (projectId) => {
   try {
     const associationsRef = collection(db, ASSOCIATIONS_COLLECTION);
-    const q = query(
-      associationsRef,
-      where('projectId', '==', projectId),
-      orderBy('createdAt', 'desc'),
-    );
+    const q = query(associationsRef, where('projectId', '==', projectId));
     const snapshot = await getDocs(q);
-    return { success: true, data: mapSnapshot(snapshot) };
+    return { success: true, data: sortByTimestamp(mapSnapshot(snapshot)) };
   } catch (error) {
     return { success: false, error: 'Error al obtener asociaciones del proyecto' };
   }

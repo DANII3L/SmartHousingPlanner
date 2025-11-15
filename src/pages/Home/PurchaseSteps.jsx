@@ -83,9 +83,6 @@ const PurchaseSteps = () => {
                 para brindarte las herramientas más actualizadas del mercado.
               </p>
             </div>
-            <button className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200">
-              Conocer más
-            </button>
           </div>
 
           <div className="flex justify-center">
@@ -130,9 +127,6 @@ const PurchaseSteps = () => {
                 </li>
               </ul>
             </div>
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200">
-              Conocer más
-            </button>
           </div>
         </div>
 

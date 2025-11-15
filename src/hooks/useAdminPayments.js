@@ -9,6 +9,7 @@ import {
 } from '../services/firebase/paymentsService';
 import { getSimulationByProject, getSimulationById } from '../services/firebase/simulationsService';
 import { findUserByDocument } from '../services/firebase/usersService';
+import { buildSimulationSummary, calculatePaymentStats } from '../utils/simulationMetrics';
 
 export const MONTH_OPTIONS = [
   { value: '01', label: 'Enero' },
@@ -266,93 +267,28 @@ export const useAdminPayments = () => {
     };
   }, [selectedUser?.simulationId, selectedUser?.userId, activeProject?.id]);
 
-  const simulationSummary = useMemo(() => {
-    if (!simulationDetails) {
-      return null;
-    }
-    const calculation = simulationDetails.calculation || {};
-    const pickNumber = (...values) => {
-      for (const value of values) {
-        const parsed = Number(value);
-        if (!Number.isNaN(parsed) && parsed !== undefined && parsed !== null) {
-          return parsed;
-        }
-      }
-      return 0;
-    };
-    const availableResources =
-      pickNumber(simulationDetails.totalAvailable, calculation.totalAvailable, 0) ||
-      [
-        simulationDetails.cesantiasAmount,
-        simulationDetails.primaAmount,
-        simulationDetails.savingsAmount,
-        calculation.cesantiasAmount,
-        calculation.primaAmount,
-        calculation.savingsAmount,
-      ].reduce((sum, value) => sum + (Number(value) || 0), 0);
+  const simulationSummary = useMemo(() => buildSimulationSummary(simulationDetails), [simulationDetails]);
 
-    return {
-      projectValue: pickNumber(simulationDetails.projectValue, calculation.projectValue),
-      financedAmount: pickNumber(
-        simulationDetails.creditAmount,
-        calculation.creditAmount,
-        calculation.loanAmount,
-      ),
-      downPaymentRequired: pickNumber(
-        simulationDetails.requiredDownPayment,
-        calculation.requiredDownPayment,
-        simulationDetails.downPayment,
-      ),
-      availableResources,
-      subsidy: pickNumber(simulationDetails.subsidyAmount, calculation.subsidyAmount),
-      prima: pickNumber(simulationDetails.primaAmount, calculation.primaAmount),
-      totalInterests: pickNumber(
-        simulationDetails.totalInterests,
-        calculation.totalInterest,
-        simulationDetails.totalInterest,
-      ),
-      totalToPay: pickNumber(
-        simulationDetails.totalToPay,
-        calculation.totalPayments,
-        simulationDetails.totalPayments,
-      ),
-      monthlyPayment: extractMonthlyPayment(simulationDetails),
-      createdAt: simulationDetails.createdAt || simulationDetails.created_at || null,
-    };
-  }, [simulationDetails]);
-
-  const monthlyRequired = useMemo(() => {
-    if (simulationSummary?.monthlyPayment) {
-      return roundCurrency(simulationSummary.monthlyPayment);
-    }
-    return roundCurrency(selectedUser?.monthlyPayment || 0);
-  }, [simulationSummary, selectedUser?.monthlyPayment]);
-
-  const history = selectedUser?.paymentHistory || [];
+  const history = useMemo(() => selectedUser?.paymentHistory || [], [selectedUser?.paymentId]);
   const hasSimulationForProject = Boolean(simulationSummary);
 
-  const totalPaid = useMemo(
+  const { monthlyRequired, totalPaid, totalExpected, remainingBalance } = useMemo(
     () =>
-      history.reduce(
-        (sum, entry) => sum + (Number(entry.actual ?? entry.amount ?? entry.value ?? 0) || 0),
-        0,
-      ),
-    [history],
+      calculatePaymentStats({
+        summary: simulationSummary,
+        simulationDetails,
+        paymentHistory: history,
+        fallbackMonthlyPayment: selectedUser?.monthlyPayment,
+        fallbackRemainingMonths: selectedUser?.remainingMonths,
+      }),
+    [
+      simulationSummary,
+      simulationDetails,
+      history,
+      selectedUser?.monthlyPayment,
+      selectedUser?.remainingMonths,
+    ],
   );
-
-  const totalExpected = useMemo(() => {
-    if (simulationDetails?.calculation?.totalPayments) {
-      return Number(simulationDetails.calculation.totalPayments);
-    }
-    const totalMonths =
-      Number(simulationDetails?.calculation?.totalMonths) ||
-      (simulationDetails?.creditTerm ? Number(simulationDetails.creditTerm) * 12 : null) ||
-      Number(selectedUser?.remainingMonths) ||
-      history.length;
-    return (monthlyRequired || 0) * (totalMonths || 0);
-  }, [simulationDetails, selectedUser?.remainingMonths, history.length, monthlyRequired]);
-
-  const remainingBalance = Math.max(totalExpected - totalPaid, 0);
 
   const chartData = useMemo(() => {
     const parseEntryDate = (entry) => {
@@ -572,39 +508,40 @@ export const useAdminPayments = () => {
     setFeedback(null);
   };
 
-  const handleDeleteEntry = async (entry) => {
-    if (!entry?.id) {
-      return;
-    }
-    const confirmed = window.confirm('¿Deseas eliminar este registro de pago?');
-    if (!confirmed) {
-      return;
-    }
-    setIsSaving(true);
-    const result = await deletePaymentHistoryEntry(entry.id);
-    setIsSaving(false);
-    setFeedback(
-      result.success
-        ? { type: 'success', message: 'Registro eliminado correctamente' }
-        : { type: 'error', message: result.error || 'No se pudo eliminar el registro' },
-    );
-    if (result.success) {
-      setFormData(createEmptyPaymentForm());
-      setEditingHistoryId(null);
-      await loadAssociations();
-    }
-  };
-
-  const buildLabelFromPeriod = () => {
-    const monthLabel = MONTH_OPTIONS.find((option) => option.value === formData.month)?.label;
-    return monthLabel ? `${monthLabel} ${formData.year}` : formData.year;
-  };
-
   const resetPaymentForm = useCallback(() => {
     setFormData(createEmptyPaymentForm());
     setEditingHistoryId(null);
     setFeedback(null);
   }, []);
+
+  const handleDeleteEntry = useCallback(
+    async (entry) => {
+      if (!entry?.id) {
+        return;
+      }
+      if (!window.confirm('¿Deseas eliminar este registro de pago?')) {
+        return;
+      }
+      setIsSaving(true);
+      const result = await deletePaymentHistoryEntry(entry.id);
+      setIsSaving(false);
+      setFeedback(
+        result.success
+          ? { type: 'success', message: 'Registro eliminado correctamente' }
+          : { type: 'error', message: result.error || 'No se pudo eliminar el registro' },
+      );
+      if (result.success) {
+        resetPaymentForm();
+        await loadAssociations();
+      }
+    },
+    [loadAssociations, resetPaymentForm],
+  );
+
+  const buildLabelFromPeriod = () => {
+    const monthLabel = MONTH_OPTIONS.find((option) => option.value === formData.month)?.label;
+    return monthLabel ? `${monthLabel} ${formData.year}` : formData.year;
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
